@@ -2,6 +2,7 @@ namespace SipStack
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Globalization;
     using System.IO;
@@ -131,6 +132,26 @@ namespace SipStack
                 sb.Flush();
                 return ms.ToArray();
             }
+        }
+
+        protected IEnumerable<Body> ParseBuffer(byte[] buffer)
+        {
+            var bs = new ByteStream(buffer, 0);
+            this.ParseRequestLine(bs.ReadLine());
+            var bodies = new List<Body>();
+
+            foreach (var l in bs.Lines())
+            {
+                if (l == string.Empty)
+                {
+                    bodies.AddRange(SipResponse.BodyParser.Parse(this.Headers["Content-Type"].ToString(), bs.Read(bs.Length - bs.Position)).ToList());
+                }
+                else
+                {
+                    this.ParseHeader(l);
+                }
+            }
+            return bodies;
         }
 
         protected abstract Body[] GetBodies();

@@ -7,14 +7,36 @@ namespace SipStack
 
     public class Contact
     {
+        private readonly string protocol;
 
-        private string protocol;
+        private readonly string name;
 
-        private string name;
+        private readonly string address;
 
-        private string address;
+        private readonly List<KeyValuePair<string, string>> parameters;
 
-        private List<KeyValuePair<string, string>> parameters;
+        public Contact(string address, string name = null, params KeyValuePair<string, string>[] parameters)
+        {
+            this.protocol = null;
+            this.name = name;
+            this.address = address;
+
+            this.parameters = new List<KeyValuePair<string, string>>(parameters.Length > 0 ? new List<KeyValuePair<string, string>>(parameters) : Enumerable.Empty<KeyValuePair<string, string>>());
+            if (this.address.Contains(':'))
+            {
+                var idx = this.address.IndexOf(':');
+
+                // guess if its a port or a protocol
+                var portString = this.address.Substring(idx + 1);
+                int port;
+                var isPort = int.TryParse(portString, out port);
+                if (!isPort)
+                {
+                    this.protocol = this.address.Substring(0, idx);
+                    this.address = this.address.Substring(idx + 1);
+                }
+            }
+        }
 
         public string Name
         {
@@ -40,33 +62,9 @@ namespace SipStack
             }
         }
 
-        public Contact(string address, string name = null, params KeyValuePair<string, string>[] parameters)
-        {
-            this.protocol = null;
-            this.name = name;
-            this.address = address;
-
-            this.parameters = new List<KeyValuePair<string, string>>(parameters.Length > 0 ? new List<KeyValuePair<string, string>>(parameters) : Enumerable.Empty<KeyValuePair<string, string>>());
-            if (this.address.Contains(':'))
-            {
-                var idx = this.address.IndexOf(':');
-                // guess if its a port or a protocol
-                var portString = this.address.Substring(idx + 1);
-                int port;
-                var isPort = int.TryParse(portString, out port);
-                if (!isPort)
-                {
-                    this.protocol = this.address.Substring(0, idx);
-                    this.address = this.address.Substring(idx + 1);
-                }
-
-            }
-        }
-
         public static implicit operator Contact(string input)
         {
-            // TODO: parse data
-            return Contact.Parse(input);
+            return Parse(input);
         }
 
         public static Contact Parse(string input)

@@ -1,5 +1,7 @@
-namespace SipStack.Tests.Isup
+namespace SipStack.Tests
 {
+    using System.Globalization;
+
     using NUnit.Framework;
 
     using SipStack.Isup;
@@ -12,7 +14,7 @@ namespace SipStack.Tests.Isup
         {
             const string SampleIsupData = "011020010a00020a080310553041b001f00a07031116481017691d038090a300";
 
-            var initialAddress = new IsupInitialAddress() { };
+            var initialAddress = new IsupInitialAddress();
             initialAddress.NatureOfConnectionIndicator.EchoControlIncluded = true;
             initialAddress.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
             initialAddress.CallingPartyCategory.LoadParameterData(new byte[] { 0x0a });
@@ -30,28 +32,27 @@ namespace SipStack.Tests.Isup
             var txt = initialAddress.GetByteArray().ToHex();
             for (var i = 0; i < txt.Length; i++)
             {
-                var exp = SampleIsupData[i].ToString().ToUpperInvariant();
-                var act = txt[i].ToString().ToUpperInvariant();
+                var exp = SampleIsupData[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
+                var act = txt[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
                 var areEqual = exp == act;
                 if (!areEqual)
                 {
-                    Assert.Fail(string.Format("Error in parameter at position {0}. Expected {1}. Actual {2}. \nexpected:\t{3}.\nactual: \t{4} ", i, exp, act, SampleIsupData.ToUpperInvariant(), txt.ToUpperInvariant()));
+                    Assert.Fail("Error in parameter at position {0}. Expected {1}. Actual {2}. \nexpected:\t{3}.\nactual: \t{4} ", i, exp, act, SampleIsupData.ToUpperInvariant(), txt.ToUpperInvariant());
                 }
             }
         }
-
 
         [Test]
         public void TestRedirInfoFilled()
         {
             const string SampleIsupData = "01012001e00002070583105194050a0703131419497736080100130204211d038090a33a064405500000000b070314149922700200";
 
-            var initialAddress = new IsupInitialAddress { };
+            var initialAddress = new IsupInitialAddress();
             initialAddress.NatureOfConnectionIndicator.EchoControlIncluded = false;
             initialAddress.NatureOfConnectionIndicator.SatelliteIndicator = NatureOfConnection.SatelliteIndicatorFlags.One;
             initialAddress.NatureOfConnectionIndicator.ContinuityCheckIndicator = NatureOfConnection.ContinuityCheckIndicatorFlags.NotRequired;
             initialAddress.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
-            initialAddress.CallingPartyCategory.CategoryFlags = CallingPartyCategory.Category.Unknown;
+            initialAddress.CallingPartyCategory.CategoryFlags = SipStack.Isup.CallingPartyCategory.Category.Unknown;
 
             initialAddress.CalledNumber.Number = "15495";
             initialAddress.CalledNumber.NumberingFlags = NAIFlags.Isdn;
@@ -62,7 +63,7 @@ namespace SipStack.Tests.Isup
 
             initialAddress.AddOptionalParameter(new OptionalIsupParameter(IsupParameterType.OptionalForwardCallIndicator, 1));
 
-            initialAddress.AddOptionalParameter(new RedirectInfo() { RedirectIndicatorFlags = RedirectInfo.RedirectIndicator.RedirectPresentationRestricted, RedirectCounter = 1, RedirectReason = RedirReason.NoReply });
+            initialAddress.AddOptionalParameter(new RedirectInfo { RedirectIndicatorFlags = RedirectInfo.RedirectIndicator.RedirectPresentationRestricted, RedirectCounter = 1, RedirectReason = RedirReason.NoReply });
 
             initialAddress.AddOptionalParameter(new OptionalIsupParameter(IsupParameterType.UserServiceInformation, 3, new byte[] { 0x80, 0x90, 0xA3 }));
 
@@ -75,15 +76,14 @@ namespace SipStack.Tests.Isup
             var txt = initialAddress.GetByteArray().ToHex();
             for (var i = 0; i < txt.Length; i++)
             {
-                var exp = SampleIsupData[i].ToString().ToUpperInvariant();
-                var act = txt[i].ToString().ToUpperInvariant();
+                var exp = SampleIsupData[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
+                var act = txt[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
                 var areEqual = exp == act;
                 if (!areEqual)
                 {
-                    Assert.Fail(string.Format("Error in parameter at position {0}. Expected {1}. Actual {2}. \nexpected:\t{3}.\nactual: \t{4} ", i, exp, act, SampleIsupData.ToUpperInvariant(), txt.ToUpperInvariant()));
+                    Assert.Fail("Error in parameter at position {0}. Expected {1}. Actual {2}. \nexpected:\t{3}.\nactual: \t{4} ", i, exp, act, SampleIsupData.ToUpperInvariant(), txt.ToUpperInvariant());
                 }
             }
         }
-
     }
 }

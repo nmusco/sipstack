@@ -1,8 +1,10 @@
-﻿namespace SipStack.Isup.Testing
+﻿namespace SipStack.Tests.Isup
 {
     using System.Linq;
 
     using NUnit.Framework;
+
+    using SipStack.Isup;
 
     using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 
@@ -13,14 +15,13 @@
         [TestCase("1549", "5194", false)]
         public void TestReverseUnReverseNumber(string unreversedNumber, string reversedNumber, bool isOdd)
         {
-            var reversed = IsupUtility.GetReversedNumber(unreversedNumber);
+            var reversed = IsupUtility.GetReversedNumber(unreversedNumber).ToArray();
 
             Assert.AreEqual(reversedNumber, reversed.ToHex());
 
             var unreversed = IsupUtility.UnReverseNumber(reversed.ToArray(), 0, isOdd);
 
             Assert.AreEqual(unreversed, unreversedNumber);
-        }
-        
+        }   
     }
 }

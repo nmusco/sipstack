@@ -24,12 +24,14 @@ namespace SipStack.Tests
             {
                 str += name + " ";
             }
+
             if (address != null)
             {
                 if (protocol != null)
                 {
                     str += "sip:";
                 }
+
                 str += address;
             }
 
@@ -37,12 +39,14 @@ namespace SipStack.Tests
             {
                 str += ";" + kvps;
             }
+
             Contact contact;
             if (str == string.Empty)
             {
-                var argsNull = Assert.Throws<ArgumentNullException>(() => contact = str);
+                Assert.Throws<ArgumentNullException>(() => contact = str);
                 return;
             }
+
             contact = str;
             Assert.AreEqual(name, contact.Name);
 
@@ -54,7 +58,6 @@ namespace SipStack.Tests
             Assert.IsNotNull(parameters);
             var kvpJoined = string.Join(";", parameters.Select(a => string.Format("{0}={1}", a.Key, a.Value)));
             Assert.AreEqual(kvps ?? string.Empty, kvpJoined);
-
         }
 
         [TestCase("john <sip:11992971271@10.0.5.25:5060;user=phone>", "john", "11992971271@10.0.5.25:5060", "user=phone")]
@@ -75,7 +78,6 @@ namespace SipStack.Tests
             Contact c1 = contact;
             var hashCode = c1.GetHashCode();
 
-
             Assert.AreNotEqual(0, hashCode);
         }
 
@@ -86,7 +88,6 @@ namespace SipStack.Tests
         public void TestContactEqualityAgainstUnknownData(string contact, object compareTo, bool expectedResult)
         {
             Contact c1 = contact;
-
 
             Assert.AreEqual(expectedResult, c1.Equals(compareTo));
         }
@@ -106,7 +107,7 @@ namespace SipStack.Tests
                         let k = kv[0]
                         let v = string.Concat(kv.Skip(1))
                         select new KeyValuePair<string, string>(k, v);
-            Contact c = new Contact(address, name, parms.ToArray());
+            var c = new Contact(address, name, parms.ToArray());
 
             Assert.AreEqual(expected, c.ToString(quoted));
         }

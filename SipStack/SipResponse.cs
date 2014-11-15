@@ -2,12 +2,8 @@ namespace SipStack
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Runtime.Remoting.Messaging;
-    using System.Text;
 
     using SipStack.Isup;
 
@@ -134,9 +130,8 @@ namespace SipStack
                     {
                         headers.Clear();
                         continue;
-                        // TODO: start of boundary
                     }
-                    
+
                     if (l == string.Empty)
                     {
                         if (!headers.ContainsKey("Content-Type"))
@@ -144,15 +139,13 @@ namespace SipStack
                             // empty line, no headers, I think there's no more data
                             yield break;
                         }
-                        
+
                         switch (headers["Content-Type"].Split(';').First().ToLowerInvariant())
                         {
                             case "application/sdp":
                                 yield return SdpBodyParser.GetBody(bs, headers["Content-Type"]);
                                 break;
                             case "application/isup":
-                                var startPos = bs.Position;
-
 
                                 yield return IsupBody.Load(bs);
                                 break;
@@ -162,7 +155,6 @@ namespace SipStack
 
                         continue;
                     }
-
 
                     var kvp = l.Split(':');
                     headers[kvp.First().Trim()] = string.Concat(kvp.Skip(1).ToArray()).Trim();
@@ -174,8 +166,8 @@ namespace SipStack
         {
             public static Sdp GetBody(ByteStream bs, string contentType)
             {
-                var sdp = Sdp.Deserialize(contentType, bs.Lines().TakeWhile(a=> a != ""));
-                
+                var sdp = Sdp.Deserialize(contentType, bs.Lines().TakeWhile(a => a != string.Empty));
+
                 return sdp;
             }
         }
@@ -187,21 +179,6 @@ namespace SipStack
                 var isupBody = IsupBody.Load(bs);
                 return isupBody;
             }
-        }
-    }
-
-    public static class DictionaryExtensions
-    {
-        public static bool TryGetValue(this OrderedDictionary dict, object key, out object val)
-        {
-            if (!dict.Contains(key))
-            {
-                val = null;
-                return false;
-            }
-
-            val = dict[key];
-            return true;
         }
     }
 }

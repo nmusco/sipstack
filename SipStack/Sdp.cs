@@ -6,26 +6,17 @@
 
     public class Sdp : Body
     {
-        public static Sdp Deserialize(string contentType, IEnumerable<string> lines)
+        public Sdp(string contentType = "application/sdp")
         {
-            var kvp = from x in lines
-                      let split = x.Split('=')
-                      select new KeyValuePair<string, string>(split.First(), string.Concat(split.Skip(1)));
-            return new Sdp(contentType, kvp);
-
+            this.ContentType = contentType;
+            this.Parameters = new List<KeyValuePair<string, string>>();
+            this.AddParameter("v", "0");
         }
 
         private Sdp(string contentType, IEnumerable<KeyValuePair<string, string>> parameters)
         {
             this.ContentType = contentType;
             this.Parameters = parameters.ToList();
-        }
-
-        public Sdp(string contentType = "application/sdp")
-        {
-            this.ContentType = contentType;
-            this.Parameters = new List<KeyValuePair<string, string>>();
-            this.AddParameter("v", "0");
         }
 
         public override string ContentText
@@ -43,6 +34,14 @@
         }
 
         public List<KeyValuePair<string, string>> Parameters { get; private set; }
+
+        public static Sdp Deserialize(string contentType, IEnumerable<string> lines)
+        {
+            var kvp = from x in lines
+                      let split = x.Split('=')
+                      select new KeyValuePair<string, string>(split.First(), string.Concat(split.Skip(1)));
+            return new Sdp(contentType, kvp);
+        }
 
         public Sdp AddParameter(string name, string value)
         {

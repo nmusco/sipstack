@@ -1,7 +1,6 @@
-namespace SipStack.Isup
+namespace SipStack
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Text;
 
@@ -69,11 +68,13 @@ namespace SipStack.Isup
 
                 readPos++;
             }
+
             if (readPos > 0)
             {
                 // need to discard endOfLine
                 return Encoding.Default.GetString(this.Read(readPos)).Substring(0, readPos - 2);
             }
+
             return null;
         }
 

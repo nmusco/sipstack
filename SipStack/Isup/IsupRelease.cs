@@ -14,6 +14,11 @@ namespace SipStack.Isup
         {
         }
 
+        public override T AddOptionalParameter<T>(T isupParameter)
+        {
+            throw new System.NotImplementedException();
+        }
+
         protected override IsupParameter GetRequiredParameter()
         {
             throw new System.NotImplementedException();
@@ -25,11 +30,6 @@ namespace SipStack.Isup
         }
 
         protected override IEnumerable<IsupParameter> GetOptionalParameters()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override T AddOptionalParameter<T>(T isupParameter)
         {
             throw new System.NotImplementedException();
         }

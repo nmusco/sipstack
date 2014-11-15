@@ -57,12 +57,12 @@
   </Choose>
   <ItemGroup>
     <Compile Include="CalledNumberTests.cs" />
-    <Compile Include="CallingPartyCategory.cs" />
     <Compile Include="ContactTests.cs" />
     <Compile Include="InitialAddressTests.cs" />
-    <Compile Include="IsupUtilityTest.cs" />
-    <Compile Include="Sip.cs" />
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="Isup\CallingPartyCategory.cs" />
+    <Compile Include="Isup\IsupUtilityTest.cs" />
+    <Compile Include="Isup\UnitTest1.cs" />
+    <Compile Include="Sip\Sip.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

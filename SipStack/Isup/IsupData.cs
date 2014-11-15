@@ -49,47 +49,6 @@
 
     public abstract class IsupBody : Body
     {
-        protected void LoadData(ByteStream bs)
-        {
-            foreach (var h in this.GetOptionalHeaders())
-            {
-                h.Load(bs);
-            }
-            this.GetRequiredParameter().Load(bs);
-
-            while (true)
-            {
-                var parameterType = (IsupParameterType)bs.Read();
-                if (parameterType == IsupParameterType.EndOfOptionalParameters)
-                {
-                    break;
-                }
-
-                int len = bs.Read();
-                var data = bs.Read(len);
-                IsupParameter p;
-                switch (parameterType)
-                {
-                    case IsupParameterType.CallingPartyNumber:
-                    case IsupParameterType.RedirectingNumber:
-                    case IsupParameterType.OriginalCalledNumber:
-                        p = new IsupPhoneNumberParameter(parameterType);
-                        break;
-                    case IsupParameterType.RedirectionInfo:
-                        p = new RedirectInfo();
-                        break;
-                    default:
-                        p = new OptionalIsupParameter(parameterType, len);
-                        break;
-                }
-                p.LoadParameterData(data);
-
-                this.AddOptionalParameter(p);
-            }
-
-
-            
-        }
         protected IsupBody(IsupMessageType isupType)
         {
             this.ContentType = "application/ISUP;version=itu-t92+;base=nxv3";
@@ -119,21 +78,12 @@
             }
         }
 
-        protected abstract IsupParameter GetRequiredParameter();
-
-        protected abstract IEnumerable<IsupParameter> GetOptionalParameters();
-
-        protected abstract IEnumerable<IsupParameter> GetOptionalHeaders();
-
-        public abstract T AddOptionalParameter<T>(T isupParameter) where T : IsupParameter;
-
         public byte[] GetByteArray()
         {
             var optionalParameters = this.GetOptionalParameters();
 
-            var parameters =
-                new[] { this.GetOptionalHeaders(), new[] { this.GetRequiredParameter() }, optionalParameters }.SelectMany(a => a).ToList();
-            
+            var parameters = new[] { this.GetOptionalHeaders().ToArray(), new[] { this.GetRequiredParameter() }, optionalParameters.ToArray() }.SelectMany(a => a).ToList();
+
             var bytes = new List<byte> { (byte)this.IsupType };
             foreach (var a in parameters.Where(a => a != null))
             {
@@ -144,7 +94,57 @@
             {
                 bytes.Add(0);
             }
+
             return bytes.ToArray();
         }
+
+        public abstract T AddOptionalParameter<T>(T isupParameter) where T : IsupParameter;
+
+        protected void LoadData(ByteStream bs)
+        {
+            foreach (var h in this.GetOptionalHeaders())
+            {
+                h.Load(bs);
+            }
+
+            this.GetRequiredParameter().Load(bs);
+
+            while (true)
+            {
+                var parameterType = (IsupParameterType)bs.Read();
+                if (parameterType == IsupParameterType.EndOfOptionalParameters)
+                {
+                    break;
+                }
+
+                int len = bs.Read();
+                var data = bs.Read(len);
+                IsupParameter p;
+                switch (parameterType)
+                {
+                    case IsupParameterType.CallingPartyNumber:
+                    case IsupParameterType.RedirectingNumber:
+                    case IsupParameterType.OriginalCalledNumber:
+                        p = new IsupPhoneNumberParameter(parameterType);
+                        break;
+                    case IsupParameterType.RedirectionInfo:
+                        p = new RedirectInfo();
+                        break;
+                    default:
+                        p = new OptionalIsupParameter(parameterType, len);
+                        break;
+                }
+
+                p.LoadParameterData(data);
+
+                this.AddOptionalParameter(p);
+            }
+        }
+
+        protected abstract IsupParameter GetRequiredParameter();
+
+        protected abstract IEnumerable<IsupParameter> GetOptionalParameters();
+
+        protected abstract IEnumerable<IsupParameter> GetOptionalHeaders();    
     }
 }

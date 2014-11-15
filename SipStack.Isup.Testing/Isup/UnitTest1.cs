@@ -4,8 +4,6 @@
 
     using SipStack.Isup;
 
-    using Assert = NUnit.Framework.Assert;
-
     [TestFixture]
     public class NatureofConnectionTests
     {
@@ -13,10 +11,12 @@
         [TestCase(true, NatureOfConnection.ContinuityCheckIndicatorFlags.NotRequired, NatureOfConnection.SatelliteIndicatorFlags.None, "10")]
         public void TestNatureOfConnectionIndicator(bool echoCancellationIncuded, NatureOfConnection.ContinuityCheckIndicatorFlags continuityCheckIndicator, NatureOfConnection.SatelliteIndicatorFlags satelliteFlags, string expected)
         {
-            var nOfConnectionIndicator = new NatureOfConnection();
-            nOfConnectionIndicator.EchoControlIncluded = echoCancellationIncuded;
-            nOfConnectionIndicator.ContinuityCheckIndicator = continuityCheckIndicator;
-            nOfConnectionIndicator.SatelliteIndicator = satelliteFlags;
+            var nOfConnectionIndicator = new NatureOfConnection
+                                             {
+                                                 EchoControlIncluded = echoCancellationIncuded,
+                                                 ContinuityCheckIndicator = continuityCheckIndicator,
+                                                 SatelliteIndicator = satelliteFlags
+                                             };
             Assert.AreEqual(expected, nOfConnectionIndicator.ToHex());
         }
     }

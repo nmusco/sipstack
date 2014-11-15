@@ -46,6 +46,7 @@
     <Compile Include="ByteStream.cs" />
     <Compile Include="Contact.cs" />
     <Compile Include="Dialog.cs" />
+    <Compile Include="DictionaryExtensions.cs" />
     <Compile Include="InviteMessage.cs" />
     <Compile Include="ByteExtensions.cs" />
     <Compile Include="Isup\CalledNumber.cs" />
@@ -65,10 +66,10 @@
     <Compile Include="Isup\OptionalIsupParameter.cs" />
     <Compile Include="Isup\PhoneFlags.cs" />
     <Compile Include="Isup\RedirectInfo.cs" />
+    <Compile Include="Isup\RequiredIsupParameter.cs" />
     <Compile Include="MediaGateway.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RequiredIsupParameter.cs" />
     <Compile Include="Sdp.cs" />
     <Compile Include="SipMessage.cs" />
     <Compile Include="SipResponse.cs" />

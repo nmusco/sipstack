@@ -2,7 +2,6 @@ namespace SipStack.Isup
 {
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.IO;
     using System.Linq;
 
     /// <summary>
@@ -66,6 +65,12 @@ namespace SipStack.Isup
             }
         }
 
+        public override T AddOptionalParameter<T>(T isupParameter)
+        {
+            this.parameters[isupParameter.ParameterType] = isupParameter;
+            return isupParameter;
+        }
+
         protected override IsupParameter GetRequiredParameter()
         {
             return this.calledPartyNumber;
@@ -79,13 +84,6 @@ namespace SipStack.Isup
         protected override IEnumerable<IsupParameter> GetOptionalParameters()
         {
             return this.parameters.Values.OfType<OptionalIsupParameter>();
-        }
-
-        public override T AddOptionalParameter<T>(T isupParameter)
-        {
-            this.parameters[isupParameter.ParameterType] = isupParameter;
-            return isupParameter;
-
         }
     }
 }

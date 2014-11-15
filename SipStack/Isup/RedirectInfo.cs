@@ -1,19 +1,17 @@
 namespace SipStack.Isup
 {
-    using System;
-
     public class RedirectInfo : OptionalIsupParameter
     {
+        public RedirectInfo()
+            : base(IsupParameterType.RedirectionInfo, 2)
+        {
+        }
+
         public enum RedirectIndicator
         {
             RedirectPresentationRestricted = 0x4,
 
             CallDiverted = 3
-        }
-
-        public RedirectInfo()
-            : base(IsupParameterType.RedirectionInfo, 2)
-        {
         }
 
         public byte RedirectCounter { get; set; }

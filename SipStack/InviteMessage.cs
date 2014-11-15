@@ -8,22 +8,9 @@ namespace SipStack
     {
         public InviteMessage(byte[] buffer)
         {
-            var bs = new ByteStream(buffer, 0);
-            this.ParseRequestLine(bs.ReadLine());
-            foreach (var l in bs.Lines())
-            {
-                if (l == string.Empty)
-                {
-                    var bodies = SipResponse.BodyParser.Parse(
-                        this.Headers["Content-Type"].ToString(),
-                        bs.Read(bs.Length - bs.Position)).ToList();
-                    this.SdpData = bodies.OfType<Sdp>().FirstOrDefault();
-                    this.IsupData = bodies.OfType<IsupInitialAddress>().FirstOrDefault();
-                    break;
-                }
-
-                this.ParseHeader(l);
-            }
+            var bodies = this.ParseBuffer(buffer).ToList();
+            this.SdpData = bodies.OfType<Sdp>().FirstOrDefault();
+            this.IsupData = bodies.OfType<IsupInitialAddress>().FirstOrDefault();
         }
 
         public InviteMessage(string callId, Contact to, Contact from, Contact contact)

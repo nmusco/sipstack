@@ -7,8 +7,8 @@ namespace SipStack.Isup
         protected RequiredIsupParameter(IsupParameterType parameterType, int len = 0)
             : base(parameterType, len)
         {
-            
         }
+
         public byte PointerToParameter { get; set; }
 
         public byte PointerToOptionalParameter { get; set; }
