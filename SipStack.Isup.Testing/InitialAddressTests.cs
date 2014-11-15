@@ -16,6 +16,7 @@ namespace SipStack.Isup.Testing
             initialAddress.CallingPartyCategory.LoadParameterData(new byte[] { 0x0a });
 
             initialAddress.CalledNumber.Number = "5503140B100F";
+            initialAddress.CalledNumber.NumberingFlags = NAIFlags.Isdn;
 
             var callingNumber = initialAddress.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber));
             callingNumber.Number = "6184017196";
@@ -50,8 +51,9 @@ namespace SipStack.Isup.Testing
             initialAddress.CallingPartyCategory.CategoryFlags = CallingPartyCategory.Category.Unknown;
 
             initialAddress.CalledNumber.Number = "15495";
+            initialAddress.CalledNumber.NumberingFlags = NAIFlags.Isdn;
             var callingNumber = initialAddress.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = "4191947763" });
-            callingNumber.NumberingFlags |= NAIFlags.NetworProvided;
+            callingNumber.NumberingFlags = NAIFlags.NetworProvided | NAIFlags.ScreeningVerifiedAndPassed;
 
             initialAddress.AddOptionalParameter(new OptionalForwardCallIndicator());
 
