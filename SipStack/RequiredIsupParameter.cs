@@ -2,8 +2,13 @@ namespace SipStack.Isup
 {
     using System.Collections.Generic;
 
-    public class RequiredIsupParameter : OptionalIsupParameter
+    public abstract class RequiredIsupParameter : OptionalIsupParameter
     {
+        protected RequiredIsupParameter(IsupParameterType parameterType, int len = 0)
+            : base(parameterType, len)
+        {
+            
+        }
         public byte PointerToParameter { get; set; }
 
         public byte PointerToOptionalParameter { get; set; }

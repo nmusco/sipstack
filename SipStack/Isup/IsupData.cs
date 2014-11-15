@@ -49,6 +49,47 @@
 
     public abstract class IsupBody : Body
     {
+        protected void LoadData(ByteStream bs)
+        {
+            foreach (var h in this.GetOptionalHeaders())
+            {
+                h.Load(bs);
+            }
+            this.GetRequiredParameter().Load(bs);
+
+            while (true)
+            {
+                var parameterType = (IsupParameterType)bs.Read();
+                if (parameterType == IsupParameterType.EndOfOptionalParameters)
+                {
+                    break;
+                }
+
+                int len = bs.Read();
+                var data = bs.Read(len);
+                IsupParameter p;
+                switch (parameterType)
+                {
+                    case IsupParameterType.CallingPartyNumber:
+                    case IsupParameterType.RedirectingNumber:
+                    case IsupParameterType.OriginalCalledNumber:
+                        p = new IsupPhoneNumberParameter(parameterType);
+                        break;
+                    case IsupParameterType.RedirectionInfo:
+                        p = new RedirectInfo();
+                        break;
+                    default:
+                        p = new OptionalIsupParameter(parameterType, len);
+                        break;
+                }
+                p.LoadParameterData(data);
+
+                this.AddOptionalParameter(p);
+            }
+
+
+            
+        }
         protected IsupBody(IsupMessageType isupType)
         {
             this.ContentType = "application/ISUP;version=itu-t92+;base=nxv3";
@@ -71,10 +112,6 @@
             var type = (IsupMessageType)bs.Read();
             switch (type)
             {
-                case IsupMessageType.Answer:
-                    return new IsupAnswer(bs);
-                case IsupMessageType.Release:
-                    return new IsupRelease(bs);
                 case IsupMessageType.IAM:
                     return new IsupInitialAddress(bs);
                 default:
@@ -82,20 +119,13 @@
             }
         }
 
-        protected virtual IsupParameter GetRequiredParameter()
-        {
-            return null;
-        }
+        protected abstract IsupParameter GetRequiredParameter();
 
-        protected virtual IEnumerable<IsupParameter> GetOptionalParameters()
-        {
-            yield break;
-        }
+        protected abstract IEnumerable<IsupParameter> GetOptionalParameters();
 
-        protected virtual IEnumerable<IsupParameter> GetOptionalHeaders()
-        {
-            yield break;
-        }
+        protected abstract IEnumerable<IsupParameter> GetOptionalHeaders();
+
+        public abstract T AddOptionalParameter<T>(T isupParameter) where T : IsupParameter;
 
         public byte[] GetByteArray()
         {
@@ -115,10 +145,6 @@
                 bytes.Add(0);
             }
             return bytes.ToArray();
-        }
-        private string ToHexString()
-        {
-            return this.GetByteArray().ToHex();
         }
     }
 }

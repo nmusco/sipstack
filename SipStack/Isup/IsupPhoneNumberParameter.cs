@@ -1,12 +1,12 @@
 namespace SipStack.Isup
 {
+    using System;
     using System.Linq;
 
     public class IsupPhoneNumberParameter : OptionalIsupParameter
     {
-        public IsupPhoneNumberParameter(IsupParameterType parameterType)
+        public IsupPhoneNumberParameter(IsupParameterType parameterType) : base(parameterType, 0)
         {
-            this.ParameterType = parameterType;   
         }
 
         public string Number
@@ -23,7 +23,7 @@ namespace SipStack.Isup
         {
             if (string.IsNullOrWhiteSpace(this.Number))
             {
-                return new byte[0];
+                throw new InvalidOperationException("number must be valid for use with IsupPhoneNumberParameter");
             }
 
             var hexData = IsupUtility.GetReversedNumber(this.Number).ToArray();

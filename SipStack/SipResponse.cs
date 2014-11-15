@@ -84,11 +84,6 @@ namespace SipStack
             }
         }
 
-        public override void Deserialize(byte[] data)
-        {
-            throw new NotImplementedException();
-        }
-
         protected override Body[] GetBodies()
         {
             return this.Bodies.ToArray();
@@ -130,11 +125,6 @@ namespace SipStack
         {
             public static IEnumerable<Body> GetBodies(byte[] data, string boundaryId)
             {
-                if (Debugger.IsAttached)
-                {
-                    Debugger.Break();
-                }
-
                 var bs = new ByteStream(data, 0);
                 var headers = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
 
@@ -146,11 +136,7 @@ namespace SipStack
                         continue;
                         // TODO: start of boundary
                     }
-                    if (l == boundaryId + "--")
-                    {
-                        break;
-                        // TODO: end of all boundaries
-                    }
+                    
                     if (l == string.Empty)
                     {
                         if (!headers.ContainsKey("Content-Type"))

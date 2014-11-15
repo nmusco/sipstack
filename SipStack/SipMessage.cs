@@ -2,7 +2,6 @@ namespace SipStack
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Globalization;
     using System.IO;
@@ -39,10 +38,10 @@ namespace SipStack
                 {
                     return (Contact)(this.Headers["To"] = Contact.Parse(h.ToString()));
                 }
+
                 return (Contact)h;
             }
         }
-
 
         public string Method { get; private set; }
 
@@ -54,11 +53,7 @@ namespace SipStack
             switch (Encoding.Default.GetString(cmd, 0, cmd.Length).ToLowerInvariant())
             {
                 case "bye":
-                    var byeRequest = new ByeRequest();
-
-                    byeRequest.Deserialize(buffer);
-
-                    return byeRequest;
+                    return new ByeRequest(buffer);
                 case "invite":
                     return new InviteMessage(buffer);
                 default: throw new InvalidOperationException();
@@ -69,62 +64,76 @@ namespace SipStack
         {
             using (var ms = new MemoryStream())
             {
-
                 var sb = new StreamWriter(ms, Encoding.Default);
-                
+
                 sb.WriteLine("{0} {1} SIP/2.0", this.Method, this.To.ToString(false));
 
                 var bodies = this.GetBodies();
-                if (bodies.Length > 0)
-                {
-                    this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
-                }
-
                 var bodyBuilder = new StringBuilder();
-
                 if (bodies.Length > 0)
                 {
-                    bodyBuilder.AppendLine();
-                    bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                    if (bodies.Length == 1)
+                    {
+                        this.Headers["Content-Type"] = bodies[0].ContentType;
+                    }
+                    else
+                    {
+                        this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
+                    }
+
+                    if (bodies.Length > 1)
+                    {
+                        bodyBuilder.AppendLine();
+                        bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                    }
+
                     foreach (var b in bodies)
                     {
-                        bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
+                        if (bodies.Length > 1)
+                        {
+                            bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
+                        }
+
                         foreach (var kvp in b.Headers)
                         {
                             bodyBuilder.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
                         }
 
-                        bodyBuilder.Append("\r\n");
+                        bodyBuilder.AppendLine();
+
                         bodyBuilder.AppendLine(b.ContentText);
-                        bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                        if (bodies.Length > 1)
+                        {
+                            bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                        }
                     }
 
-                    bodyBuilder.Length = bodyBuilder.Length - 2;
-                    bodyBuilder.AppendLine("--");
-                    this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture);
+                    if (bodies.Length > 1)
+                    {
+                        bodyBuilder.Length = bodyBuilder.Length - 2;
+                        bodyBuilder.AppendLine("--");
+                    }
+
                     // content length does not counts on last 2 digits
+                    this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture);
                 }
 
                 foreach (DictionaryEntry kvp in this.Headers)
                 {
-                    sb.WriteLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
+                    sb.WriteLine("{0}: {1}", kvp.Key, kvp.Value);
                 }
 
                 if (bodyBuilder.Length > 0)
                 {
                     sb.Write(bodyBuilder);
                 }
+
                 sb.Flush();
                 return ms.ToArray();
             }
         }
 
-        public abstract void Deserialize(byte[] buffer);
-
-        protected virtual Body[] GetBodies()
-        {
-            return new Body[0];
-        }
+        protected abstract Body[] GetBodies();
 
         protected void ParseRequestLine(string line)
         {

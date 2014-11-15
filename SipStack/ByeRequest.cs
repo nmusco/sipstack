@@ -8,39 +8,14 @@ namespace SipStack
     {
         private IEnumerable<Body> bodies = new List<Body>();
 
-        public override void Deserialize(byte[] buffer)
+        public ByeRequest(byte[] buffer)
         {
-            var ms = new MemoryStream(buffer);
+            throw new System.NotImplementedException();
+        }
 
-            var reader = new StreamReader(ms);
-            
-            this.ParseRequestLine(reader.ReadLine());
-
-            do
-            {
-                var currentline = reader.ReadLine();
-                if (currentline == null)
-                {
-                    break;
-                }
-
-                if (currentline == string.Empty)
-                {
-                    if (this.Headers.Contains("Content-Type") && this.Headers.Contains("Content-Length"))
-                    {
-                        var body = new byte[int.Parse(this.Headers["Content-Length"].ToString())];
-                        ms.Seek(-body.Length, SeekOrigin.End);
-                        ms.Read(body, 0, body.Length);
-                        this.bodies = SipResponse.BodyParser.Parse(this.Headers["Content-Type"].ToString(), body).ToList();
-                        break;
-                    }
-                }
-                else
-                {
-                    this.ParseHeader(currentline);
-                }
-            }
-            while (true);
+        protected override Body[] GetBodies()
+        {
+            return this.bodies.ToArray();
         }
     }
 }

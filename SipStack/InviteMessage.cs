@@ -1,6 +1,5 @@
 namespace SipStack
 {
-    using System.IO;
     using System.Linq;
 
     using SipStack.Isup;
@@ -18,16 +17,15 @@ namespace SipStack
                     var bodies = SipResponse.BodyParser.Parse(
                         this.Headers["Content-Type"].ToString(),
                         bs.Read(bs.Length - bs.Position)).ToList();
-                    this.SdpData = bodies.OfType<Sdp>().First();
-                    this.IsupData = bodies.OfType<IsupInitialAddress>().First();
+                    this.SdpData = bodies.OfType<Sdp>().FirstOrDefault();
+                    this.IsupData = bodies.OfType<IsupInitialAddress>().FirstOrDefault();
                     break;
                 }
-                else
-                {
-                    this.ParseHeader(l);
-                }
+
+                this.ParseHeader(l);
             }
         }
+
         public InviteMessage(string callId, Contact to, Contact from, Contact contact)
             : base(to, "INVITE")
         {
@@ -43,8 +41,6 @@ namespace SipStack
             this.Headers["Supported"] = "100rel,timer,replaces";
             this.Headers["To"] = this.To;
             this.Headers["Via"] = string.Empty;
-            //            this.Headers["P-Asserted-Identity"] = this.From;
-            //this.Headers["Accept"] = "application/sdp, application/isup";
         }
 
         public Sdp SdpData { get; set; }
@@ -60,6 +56,7 @@ namespace SipStack
                 {
                     return (Contact)(this.Headers["From"] = Contact.Parse(h.ToString()));
                 }
+
                 return (Contact)h;
             }
         }
@@ -73,13 +70,9 @@ namespace SipStack
                 {
                     return (Contact)(this.Headers["Contact"] = Contact.Parse(h.ToString()));
                 }
+
                 return (Contact)h;
             }
-        }
-
-        public override void Deserialize(byte[] data)
-        {
-            throw new System.NotImplementedException();
         }
 
         protected override Body[] GetBodies()
@@ -94,7 +87,7 @@ namespace SipStack
                 return new Body[] { this.SdpData };
             }
 
-            return this.IsupData != null ? new Body[] { this.IsupData } : null;
+            return this.IsupData != null ? new Body[] { this.IsupData } : new Body[0];
         }
     }
 }

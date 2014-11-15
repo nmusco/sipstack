@@ -56,7 +56,11 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CalledNumberTests.cs" />
+    <Compile Include="CallingPartyCategory.cs" />
+    <Compile Include="ContactTests.cs" />
     <Compile Include="InitialAddressTests.cs" />
+    <Compile Include="IsupUtilityTest.cs" />
     <Compile Include="Sip.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

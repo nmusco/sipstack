@@ -51,7 +51,6 @@
     <Compile Include="Isup\CalledNumber.cs" />
     <Compile Include="Isup\CallingPartyCategory.cs" />
     <Compile Include="Isup\ForwardCallIndicators.cs" />
-    <Compile Include="Isup\IsupAnswer.cs" />
     <Compile Include="Isup\IsupData.cs" />
     <Compile Include="Isup\IsupExtensions.cs" />
     <Compile Include="Isup\IsupHeader.cs" />
@@ -62,6 +61,7 @@
     <Compile Include="Isup\IsupUtility.cs" />
     <Compile Include="Isup\NAIFlags.cs" />
     <Compile Include="Isup\NatureOfConnection.cs" />
+    <Compile Include="Isup\OptionalForwardCallIndicator.cs" />
     <Compile Include="Isup\OptionalIsupParameter.cs" />
     <Compile Include="Isup\PhoneFlags.cs" />
     <Compile Include="Isup\RedirectInfo.cs" />
@@ -72,7 +72,6 @@
     <Compile Include="Sdp.cs" />
     <Compile Include="SipMessage.cs" />
     <Compile Include="SipResponse.cs" />
-    <Compile Include="StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

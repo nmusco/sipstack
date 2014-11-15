@@ -19,6 +19,7 @@ namespace SipStack.Tests.Isup
 
             initialAddress.CalledNumber.Number = "5503140B100F";
             initialAddress.CalledNumber.NumberingFlags = NAIFlags.Isdn;
+            initialAddress.CalledNumber.Flags = PhoneFlags.NAINationalNumber;
 
             var callingNumber = initialAddress.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber));
             callingNumber.Number = "6184017196";
@@ -54,10 +55,12 @@ namespace SipStack.Tests.Isup
 
             initialAddress.CalledNumber.Number = "15495";
             initialAddress.CalledNumber.NumberingFlags = NAIFlags.Isdn;
+            initialAddress.CalledNumber.Flags = PhoneFlags.NAINationalNumber;
+            
             var callingNumber = initialAddress.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = "4191947763" });
             callingNumber.NumberingFlags = NAIFlags.NetworProvided | NAIFlags.ScreeningVerifiedAndPassed;
 
-            initialAddress.AddOptionalParameter(new OptionalForwardCallIndicator());
+            initialAddress.AddOptionalParameter(new OptionalIsupParameter(IsupParameterType.OptionalForwardCallIndicator, 1));
 
             initialAddress.AddOptionalParameter(new RedirectInfo() { RedirectIndicatorFlags = RedirectInfo.RedirectIndicator.RedirectPresentationRestricted, RedirectCounter = 1, RedirectReason = RedirReason.NoReply });
 

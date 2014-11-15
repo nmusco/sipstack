@@ -45,7 +45,7 @@ namespace SipStack
             this.protocol = null;
             this.name = name;
             this.address = address;
-            
+
             this.parameters = new List<KeyValuePair<string, string>>(parameters.Length > 0 ? new List<KeyValuePair<string, string>>(parameters) : Enumerable.Empty<KeyValuePair<string, string>>());
             if (this.address.Contains(':'))
             {
@@ -77,32 +77,40 @@ namespace SipStack
             }
 
             input = input.TrimStart();
-            bool isQuoted = input.StartsWith("<");
+            bool isQuoted = input.StartsWith("\"");
 
-
-            var idx = input.IndexOf(' ', isQuoted ? 1 : 0);
             string name = null;
-            string address = null;
+            string address;
+
+            var idx = input.IndexOf(isQuoted ? '"' : ' ', isQuoted ? 1 : 0);
+            if (idx > -1)
+            {
+                name = input.Substring(0, idx + (isQuoted ? 1 : 0));
+                input = input.Substring(idx + 1);
+            }
 
             var parameters = new List<KeyValuePair<string, string>>();
 
-            if (idx > -1)
+            if (isQuoted)
             {
-                name = input.Substring(isQuoted ? 1 : 0, idx);
-                input = input.Substring(idx + (isQuoted ? 1 : 0) + 1);
-
+                input = input.Substring(input.IndexOf('"', 1) + 1);
+            }
+            
+            if (input.IndexOf('<') > -1 && input.IndexOf('>') > -1)
+            {
+                input = input.Substring(input.IndexOf('<') + 1, input.LastIndexOf('>') - 1);
             }
 
             idx = input.IndexOf(';');
             if (idx == -1)
             {
-                address = input.Substring(0, isQuoted ? input.Length - 1 : input.Length);
+                address = input.Trim();
             }
             else
             {
-                address = input.Substring(0, idx);
+                address = input.Substring(0, idx).Trim();
 
-                input = input.Substring(idx + 1, (isQuoted ? input.Length - 1 : input.Length) - 1 - idx);
+                input = input.Substring(idx + 1);
 
                 var kvp = from x in input.Split(';')
                           let split = x.Split('=')
@@ -112,21 +120,6 @@ namespace SipStack
             }
 
             return new Contact(address, name, parameters.ToArray());
-        }
-
-        public static implicit operator string(Contact c)
-        {
-            return c.ToString();
-        }
-
-        public static bool operator ==(Contact a, Contact b)
-        {
-            return a.Equals(b);
-        }
-
-        public static bool operator !=(Contact a, Contact b)
-        {
-            return !a.Equals(b);
         }
 
         public override bool Equals(object obj)
@@ -150,7 +143,7 @@ namespace SipStack
             var sb = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(this.name))
             {
-                sb.AppendFormat("\"{0}\" ", this.name);
+                sb.AppendFormat("{0} ", this.name);
             }
 
             if (includeQuotes)

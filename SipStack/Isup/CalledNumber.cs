@@ -1,10 +1,11 @@
 namespace SipStack.Isup
 {
+    using System;
     using System.Linq;
 
     public class CalledNumber : RequiredIsupParameter
     {
-        public CalledNumber()
+        public CalledNumber() : base(IsupParameterType.CalledPartyNumber)
         {
             this.PointerToParameter = 2;
         }
@@ -19,14 +20,13 @@ namespace SipStack.Isup
         {
             if (string.IsNullOrWhiteSpace(this.Number))
             {
-                return new byte[0];
+                throw new InvalidOperationException("Cant serialize an empty called number");
             }
 
             var hexData = IsupUtility.GetReversedNumber(this.Number).ToArray();
             this.PointerToOptionalParameter = (byte)(hexData.Length + this.PointerToParameter + 2);
             var isEven = (this.Number.Length % 2) == 0;
             this.Flags |= isEven ? PhoneFlags.IsEven : PhoneFlags.IsOdd;
-            this.Flags |= PhoneFlags.NAINationalNumber;
 
             return new[] { (byte)this.Flags, (byte)this.NumberingFlags }.Concat(hexData).ToArray();
         }

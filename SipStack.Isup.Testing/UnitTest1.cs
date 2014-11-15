@@ -1,44 +1,10 @@
-﻿namespace SipStack.Isup.Testing
+﻿namespace SipStack.Tests.Isup
 {
-    using System.Linq;
-
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-
     using NUnit.Framework;
 
-    using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
+    using SipStack.Isup;
 
-    [TestFixture]
-    public class IsupUtilityTest
-    {
-        [TestCase("15499", "519409", true)]
-        public void TestReverseUnReverseNumber(string unreversedNumber, string reversedNumber, bool isOdd)
-        {
-            var reversed = IsupUtility.GetReversedNumber(unreversedNumber);
-
-            Assert.AreEqual(reversedNumber, reversed.ToHex());
-
-            var unreversed = IsupUtility.UnReverseNumber(reversed.ToArray(), 0, isOdd);
-
-            Assert.AreEqual(unreversed, unreversedNumber);
-        }
-        
-    }
-
-    [TestFixture]
-    public class CallingPartyCategory
-    {
-        [Test]
-        public void TestCallingPartyCatgorySerialize()
-        {
-            var cpc = new SipStack.Isup.CallingPartyCategory();
-            cpc.CategoryFlags = Isup.CallingPartyCategory.Category.Unknown;
-            var result = cpc.GetParameterData();
-
-            const string expected = "E0";
-            Assert.AreEqual(expected, cpc.ToHex());
-        }
-    }
+    using Assert = NUnit.Framework.Assert;
 
     [TestFixture]
     public class NatureofConnectionTests

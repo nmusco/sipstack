@@ -2,23 +2,11 @@ namespace SipStack.Isup
 {
     using System.Collections.Generic;
 
-    public class OptionalForwardCallIndicator : OptionalIsupParameter
-    {
-        public OptionalForwardCallIndicator()
-            : base(IsupParameterType.OptionalForwardCallIndicator, 1)
-        {
-        }
-    }
-
     public class OptionalIsupParameter : IsupParameter
     {
         private byte[] data;
 
-        public OptionalIsupParameter()
-        {
-        }
-
-        public OptionalIsupParameter(IsupParameterType parameterType, int len, byte[] data = null) : base()
+        public OptionalIsupParameter(IsupParameterType parameterType, int len, byte[] data = null)
         {
             this.data = data ?? new byte[len];
             this.ParameterType = parameterType;
@@ -26,11 +14,6 @@ namespace SipStack.Isup
         
         public override IEnumerable<byte> Serialize()
         {
-            if (!this.IsPresent)
-            {
-                yield break;
-            }
-
             var parameterData = this.GetParameterData();
             
             if (parameterData == null || parameterData.Length == 0)
