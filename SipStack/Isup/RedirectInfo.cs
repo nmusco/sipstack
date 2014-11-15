@@ -26,5 +26,12 @@ namespace SipStack.Isup
         {
             return new[] { (byte)this.RedirectIndicatorFlags, (byte)(this.RedirectCounter | (byte)this.RedirectReason) };
         }
+
+        public override void LoadParameterData(byte[] parameterData)
+        {
+            this.RedirectIndicatorFlags = (RedirectIndicator)parameterData[0];
+            this.RedirectCounter = (byte)(parameterData[1] & 0x07);
+            this.RedirectReason = (RedirReason)(parameterData[1] & 0x20);
+        }
     }
 }

@@ -92,10 +92,13 @@ namespace SipStack.Tests.Sip
             Assert.AreEqual(invite.Contact.ToString(), deserialized.Contact.ToString());
 
             Assert.AreEqual(invite.From, deserialized.From);
-            Assert.AreEqual(invite.Method, deserialized.Method);
             Assert.AreEqual(invite.To, deserialized.To);
 
             Assert.AreEqual(invite.SdpData.ContentText, deserialized.SdpData.ContentText);
+
+            Assert.AreEqual(invite.IsupData.GetByteArray().ToHex().ToUpper(), deserialized.IsupData.GetByteArray().ToHex().ToUpper());
+
+            Assert.AreEqual(invite.Method, deserialized.Method);
         }
 
         [TestCase("username", "abcd@10.0.0.1", "user=phone", null)]
@@ -143,6 +146,39 @@ namespace SipStack.Tests.Sip
             var kvpJoined = string.Join(";", parameters.Select(a => string.Format("{0}={1}", a.Key, a.Value)));
             Assert.AreEqual(kvps ?? string.Empty, kvpJoined);
 
+        }
+
+        [TestCase("<sip:11992971271@10.0.5.25:5060;user=phone>", null, "11992971271@10.0.5.25:5060", "user=phone")]
+        [TestCase("<sip:11992971271@10.0.5.25:5060>", null, "11992971271@10.0.5.25:5060", null)]
+        public void TestQuotedContact(string input, string expectedName, string expectedAddress, string expectedParameters)
+        {
+            Contact c = input;
+
+            Assert.AreEqual(c.Name, expectedName);
+            Assert.AreEqual(c.Address, expectedAddress);
+            Assert.AreEqual(string.Concat(c.GetParameters().Select(a => a.Key + "=" + a.Value)), expectedParameters ?? string.Empty);
+        }
+
+        [TestCase("sip:11992971271@10.0.5.25")]
+        public void TestContactGetHashCode(string contact)
+        {
+            Contact c1 = contact;
+            var hashCode = c1.GetHashCode();
+            
+
+            Assert.AreNotEqual(0, hashCode);
+        }
+
+        [TestCase("sip:11992971271@10.0.5.25:5060;user=phone", 0, false)]
+        [TestCase("sip:11992971271@10.0.5.25:5060;user=phone", false, false)]
+        [TestCase("sip:11992971271@10.0.5.25:5060;user=phone", "sip:11992971271@10.0.5.25:5060;user=phone", true)]
+        [TestCase("sip:11992971271@10.0.5.25:5060;user=phone", "<sip:11992971271@10.0.5.25:5060;user=phone>", true)]
+        public void TestContactEqualityAgainstUnknownData(string contact, object compareTo, bool expectedResult)
+        {
+            Contact c1 = contact;
+
+
+            Assert.AreEqual(expectedResult, c1.Equals(compareTo));
         }
     }
 }

@@ -131,6 +131,12 @@ namespace SipStack
 
         public override bool Equals(object obj)
         {
+            if (obj is string)
+            {
+                var str = obj as string;
+                return this.ToString(str.Contains("<") || str.Contains(">")).Equals(obj.ToString());
+            }
+
             return obj is Contact && (obj as Contact).ToString() == this.ToString();
         }
 
