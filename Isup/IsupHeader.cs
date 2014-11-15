@@ -12,17 +12,12 @@ namespace SipStack.Isup
         {
             this.parameterLength = parameterLength;
             this.ParameterType = parameterType;
-            this.data = new byte[parameterLength];
-            
+            this.data = new byte[parameterLength];   
         }
 
         public override IEnumerable<byte> Serialize()
         {
-            yield return (byte)this.ParameterType;
-            foreach (var d in this.GetParameterData())
-            {
-                yield return d;
-            }
+            return this.GetParameterData();
         }
 
         public override void Load(ByteStream byteStream)
@@ -35,9 +30,9 @@ namespace SipStack.Isup
             return this.data;
         }
 
-        public override void LoadParameterData(byte[] data)
+        public override void LoadParameterData(byte[] parameterData)
         {
-            this.data = data;
+            this.data = parameterData;
         }
     }
 }

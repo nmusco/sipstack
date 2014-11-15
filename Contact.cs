@@ -12,9 +12,14 @@ namespace SipStack
 
         public List<KeyValuePair<string, string>> Parameters { get; set; }
 
-        public override string ToString()
+        public static implicit operator Contact(string input)
         {
-            return this.ToString(true);
+            return new Contact { Address = input };
+        }
+
+        public static implicit operator string(Contact c)
+        {
+            return c.ToString();
         }
 
         public string ToString(bool includeQuotes)
@@ -24,16 +29,19 @@ namespace SipStack
             {
                 sb.AppendFormat("\"{0}\" ", this.Name);
             }
+
             if (includeQuotes)
             {
                 sb.Append("<");
             }
+
             sb.AppendFormat("sip:{0}", this.Address);
             if (this.Parameters != null && this.Parameters.Count > 0)
             {
                 sb.Append(";");
                 sb.Append(string.Join(";", this.Parameters.Select(a => string.Format("{0}={1}", a.Key, a.Value))));
             }
+
             if (includeQuotes)
             {
                 sb.Append(">");
@@ -42,14 +50,9 @@ namespace SipStack
             return sb.ToString();
         }
 
-        public static implicit operator Contact(string input)
+        public override string ToString()
         {
-            return new Contact() { Address = input };
-        }
-
-        public static implicit operator string(Contact c)
-        {
-            return c.ToString();
+            return this.ToString(true);
         }
     }
 }

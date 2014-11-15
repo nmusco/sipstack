@@ -1,7 +1,5 @@
 ﻿namespace SipStack
 {
-    using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Text;
 
@@ -23,6 +21,7 @@
                 {
                     sb.AppendLine(string.Format("{0}={1}", kvp.Key, kvp.Value));
                 }
+
                 return sb.ToString();
             }
         }

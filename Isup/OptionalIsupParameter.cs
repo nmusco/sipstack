@@ -2,6 +2,14 @@ namespace SipStack.Isup
 {
     using System.Collections.Generic;
 
+    public class OptionalForwardCallIndicator : OptionalIsupParameter
+    {
+        public OptionalForwardCallIndicator()
+            : base(IsupParameterType.OptionalForwardCallIndicator, 1)
+        {
+        }
+    }
+
     public class OptionalIsupParameter : IsupParameter
     {
         private byte[] data;
@@ -10,16 +18,26 @@ namespace SipStack.Isup
         {
         }
 
-        public OptionalIsupParameter(IsupParameterType parameterType, int len, byte[] data = null)
+        public OptionalIsupParameter(IsupParameterType parameterType, int len, byte[] data = null) : base()
         {
             this.data = data ?? new byte[len];
             this.ParameterType = parameterType;
         }
         
-
         public override IEnumerable<byte> Serialize()
         {
+            if (!this.IsPresent)
+            {
+                yield break;
+            }
+
             var parameterData = this.GetParameterData();
+            
+            if (parameterData == null || parameterData.Length == 0)
+            {
+                yield break;
+            }
+
             yield return (byte)this.ParameterType;
             yield return (byte)parameterData.Length;
             foreach (var d in parameterData)
@@ -40,9 +58,9 @@ namespace SipStack.Isup
             return this.data;
         }
 
-        public override void LoadParameterData(byte[] data)
+        public override void LoadParameterData(byte[] parameterData)
         {
-            this.data = data;
+            this.data = parameterData;
         }
     }
 }

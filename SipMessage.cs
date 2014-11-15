@@ -1,38 +1,55 @@
 namespace SipStack
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
+    using System.Collections.Specialized;
+    using System.Globalization;
     using System.Text;
 
     public abstract class SipMessage
     {
         private const string BoundaryId = "unique-boundary-1";
+
+        protected SipMessage()
+        {
+            this.Headers = new OrderedDictionary();
+        }
+
+        protected SipMessage(string method)
+            : this()
+        {
+            this.Method = method;
+        }
+
+        protected SipMessage(Contact to, string method)
+            : this(method)
+        {
+            this.To = to;
+
+            this.ContactParameters = new List<KeyValuePair<string, string>>();
+        }
+
         public Contact To { get; private set; }
 
         public List<KeyValuePair<string, string>> ContactParameters { get; private set; }
 
         public string Method { get; private set; }
 
-        public IDictionary<string, string> Headers { get; private set; }
+        public OrderedDictionary Headers { get; private set; }
 
-        public SipMessage()
+        public static SipMessage Parse(byte[] buffer)
         {
-            this.Headers = new Dictionary<string, string>();
-            
-        }
-        public SipMessage(string method)
-            :this()
-        {
-            this.Method = method;
-        }
-        protected SipMessage(Contact to, string method)
-            : this(method)
-        {
-            this.To = to;
-            
-            this.ContactParameters = new List<KeyValuePair<string, string>>();
+            switch (Encoding.Default.GetString(buffer, 0, 3).ToLowerInvariant())
+            {
+                case "bye":
+                    var byeRequest = new ByeRequest();
+
+                    byeRequest.Deserialize(buffer);
+
+                    return byeRequest;
+                default: throw new InvalidOperationException();
+            }
         }
 
         public virtual string Serialize()
@@ -45,45 +62,41 @@ namespace SipStack
             var bodies = this.GetBodies();
             if (bodies.Length > 0)
             {
-
-                this.Headers["Content-Type"] = string.Format("multipart/mixed; boundary={0}", BoundaryId);
-                this.Headers["MIME-Version"] = "1.0";
+                this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
             }
 
-
-
-            var sbBody = new StringBuilder();
+            var bodyBuilder = new StringBuilder();
 
             if (bodies.Length > 0)
             {
-
-                sbBody.AppendLine();
-                sbBody.AppendLine(string.Format("--{0}", BoundaryId));
+                bodyBuilder.AppendLine();
+                bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
                 foreach (var b in bodies)
                 {
-                    sbBody.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
+                    bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
                     foreach (var kvp in b.Headers)
                     {
-                        sbBody.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
+                        bodyBuilder.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
                     }
-                    sbBody.AppendLine();
-                    sbBody.AppendLine(b.ContentText);
-                    sbBody.AppendLine(string.Format("--{0}", BoundaryId));
-                }
-                sbBody.Length = sbBody.Length - 2;
-                sbBody.AppendLine("--");
-                this.Headers["Content-Length"] = sbBody.Length.ToString();
 
+                    bodyBuilder.Append("\r\n");
+                    bodyBuilder.AppendLine(b.ContentText);
+                    bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                }
+
+                bodyBuilder.Length = bodyBuilder.Length - 2;
+                bodyBuilder.AppendLine("--");
+                this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture); // content length does not counts on last 2 digits
             }
 
-            foreach (var kvp in this.Headers)
+            foreach (DictionaryEntry kvp in this.Headers)
             {
                 sb.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
             }
 
-            if (sbBody.Length > 0)
+            if (bodyBuilder.Length > 0)
             {
-                sb.Append(sbBody);
+                sb.Append(bodyBuilder);
             }
 
             return sb.ToString();
@@ -95,25 +108,11 @@ namespace SipStack
         {
             return new Body[0];
         }
-
-        public static SipMessage Parse(byte[] buffer)
-        {
-            switch (Encoding.Default.GetString(buffer, 0, 3).ToLowerInvariant())
-            {
-                case "bye":
-                    var byeRequest = new ByeRequest();
-                    
-                    byeRequest.Deserialize(buffer);
-
-                    return byeRequest;
-                default:throw new InvalidOperationException();
-            }
-        }
-
+        
         protected void ParseRequestLine(string line)
         {
             this.Method = line.Substring(0, 3);
-            this.To = line.Substring(3, line.Length -10);
+            this.To = line.Substring(3, line.Length - 10);
         }
 
         protected void ParseHeader(string line)

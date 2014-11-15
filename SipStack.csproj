@@ -7,8 +7,8 @@
     <ProjectGuid>{D6FFAC87-7761-441E-A069-E19037A2CCE1}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PJSipTesting</RootNamespace>
-    <AssemblyName>PJSipTesting</AssemblyName>
+    <RootNamespace>SipStack</RootNamespace>
+    <AssemblyName>SipStack</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -32,9 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SipekSdk">
-      <HintPath>lib\SipekSdk.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,17 +41,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Body.cs" />
     <Compile Include="ByeRequest.cs" />
     <Compile Include="ByteStream.cs" />
-    <Compile Include="CalledNumber.cs" />
     <Compile Include="Contact.cs" />
+    <Compile Include="Dialog.cs" />
     <Compile Include="InviteMessage.cs" />
-    <Compile Include="IsupAnswer.cs" />
-    <Compile Include="IsupData.cs" />
-    <Compile Include="IsupHeader.cs" />
-    <Compile Include="IsupParameter.cs" />
-    <Compile Include="IsupRelease.cs" />
-    <Compile Include="OptionalIsupParameter.cs" />
+    <Compile Include="ByteExtensions.cs" />
+    <Compile Include="Isup\CalledNumber.cs" />
+    <Compile Include="Isup\CallingPartyCategory.cs" />
+    <Compile Include="Isup\ForwardCallIndicators.cs" />
+    <Compile Include="Isup\IsupAnswer.cs" />
+    <Compile Include="Isup\IsupData.cs" />
+    <Compile Include="Isup\IsupExtensions.cs" />
+    <Compile Include="Isup\IsupHeader.cs" />
+    <Compile Include="Isup\IsupInitialAddress.cs" />
+    <Compile Include="Isup\IsupParameter.cs" />
+    <Compile Include="Isup\IsupPhoneNumberParameter.cs" />
+    <Compile Include="Isup\IsupRelease.cs" />
+    <Compile Include="Isup\IsupUtility.cs" />
+    <Compile Include="Isup\NAIFlags.cs" />
+    <Compile Include="Isup\NatureOfConnection.cs" />
+    <Compile Include="Isup\OptionalIsupParameter.cs" />
+    <Compile Include="Isup\PhoneFlags.cs" />
+    <Compile Include="Isup\RedirectInfo.cs" />
+    <Compile Include="MediaGateway.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequiredIsupParameter.cs" />
