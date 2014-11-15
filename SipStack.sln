@@ -5,7 +5,7 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SipStack", "SipStack\SipStack.csproj", "{D6FFAC87-7761-441E-A069-E19037A2CCE1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SipStack.Isup.Testing", "SipStack.Isup.Testing\SipStack.Isup.Testing.csproj", "{34C37B99-CB15-4548-A794-C40E9929AAC4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SipStack.Tests", "SipStack.Isup.Testing\SipStack.Tests.csproj", "{34C37B99-CB15-4548-A794-C40E9929AAC4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{FB78042C-9BF3-4100-891A-19B96B1F2D44}"
 	ProjectSection(SolutionItems) = preProject

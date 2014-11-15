@@ -31,9 +31,9 @@ namespace SipStack.Isup
 
         public override void LoadParameterData(byte[] parameterData)
         {
-            this.EchoControlIncluded = parameterData[0] >> 5 == 1;
-            this.ContinuityCheckIndicator = (ContinuityCheckIndicatorFlags)((parameterData[0] & 0x20) >> 2);
-            this.SatelliteIndicator = (SatelliteIndicatorFlags)((parameterData[0] & 0x20) ^ (byte)this.ContinuityCheckIndicator);
+            this.EchoControlIncluded = (parameterData[0] & 0x10) == 0x10;
+            this.ContinuityCheckIndicator = (ContinuityCheckIndicatorFlags)(parameterData[0] >> 2 & 0x3);
+            this.SatelliteIndicator = (SatelliteIndicatorFlags)(parameterData[0] & 0x3);
             base.LoadParameterData(parameterData);
         }
 

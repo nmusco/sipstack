@@ -1,13 +1,29 @@
 ﻿namespace SipStack
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
 
     public class Sdp : Body
     {
-        public Sdp()
+        public static Sdp Deserialize(string contentType, IEnumerable<string> lines)
         {
-            this.ContentType = "application/sdp";
+            var kvp = from x in lines
+                      let split = x.Split('=')
+                      select new KeyValuePair<string, string>(split.First(), string.Concat(split.Skip(1)));
+            return new Sdp(contentType, kvp);
+
+        }
+
+        private Sdp(string contentType, IEnumerable<KeyValuePair<string, string>> parameters)
+        {
+            this.ContentType = contentType;
+            this.Parameters = parameters.ToList();
+        }
+
+        public Sdp(string contentType = "application/sdp")
+        {
+            this.ContentType = contentType;
             this.Parameters = new List<KeyValuePair<string, string>>();
             this.AddParameter("v", "0");
         }

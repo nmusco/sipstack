@@ -33,11 +33,7 @@ namespace SipStack
             var dlg = new Dialog(Guid.NewGuid().ToString() + "@" + localIp, remoteHost);
             var invite = new InviteMessage(dlg.CallId, to, @from, @from);
 
-            invite.ContactParameters.Add(new KeyValuePair<string, string>("user", "phone"));
-
             var media = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw, localIp);
-
-            invite.ContactParameters.Add(new KeyValuePair<string, string>("user", "phone"));
 
             invite.SdpData = new Sdp();
             invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), media.LocalEndpoint.Address))
@@ -89,7 +85,7 @@ namespace SipStack
 
         private SipMessage SendAndWaitResponse(InviteMessage invite)
         {
-            var dgram = Encoding.Default.GetBytes(invite.Serialize());
+            var dgram = invite.Serialize();
             this.connection.Send(dgram, dgram.Length, this.remoteHost);
 
             var resp = this.connection.ReceiveAsync();

@@ -5,6 +5,8 @@ namespace SipStack
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Globalization;
+    using System.IO;
+    using System.Linq;
     using System.Text;
 
     public abstract class SipMessage
@@ -25,14 +27,22 @@ namespace SipStack
         protected SipMessage(Contact to, string method)
             : this(method)
         {
-            this.To = to;
-
-            this.ContactParameters = new List<KeyValuePair<string, string>>();
+            this.Headers["To"] = to;
         }
 
-        public Contact To { get; private set; }
+        public Contact To
+        {
+            get
+            {
+                var h = this.Headers["To"];
+                if (h is string)
+                {
+                    return (Contact)(this.Headers["To"] = Contact.Parse(h.ToString()));
+                }
+                return (Contact)h;
+            }
+        }
 
-        public List<KeyValuePair<string, string>> ContactParameters { get; private set; }
 
         public string Method { get; private set; }
 
@@ -40,7 +50,8 @@ namespace SipStack
 
         public static SipMessage Parse(byte[] buffer)
         {
-            switch (Encoding.Default.GetString(buffer, 0, 3).ToLowerInvariant())
+            var cmd = buffer.TakeWhile(a => a != ' ').ToArray();
+            switch (Encoding.Default.GetString(cmd, 0, cmd.Length).ToLowerInvariant())
             {
                 case "bye":
                     var byeRequest = new ByeRequest();
@@ -48,58 +59,64 @@ namespace SipStack
                     byeRequest.Deserialize(buffer);
 
                     return byeRequest;
+                case "invite":
+                    return new InviteMessage(buffer);
                 default: throw new InvalidOperationException();
             }
         }
 
-        public virtual string Serialize()
+        public virtual byte[] Serialize()
         {
-            var sb = new StringBuilder();
-            sb.AppendFormat("{0} {1}", this.Method, this.To.ToString(false));
-
-            sb.AppendLine(" SIP/2.0");
-
-            var bodies = this.GetBodies();
-            if (bodies.Length > 0)
+            using (var ms = new MemoryStream())
             {
-                this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
-            }
 
-            var bodyBuilder = new StringBuilder();
+                var sb = new StreamWriter(ms, Encoding.Default);
+                
+                sb.WriteLine("{0} {1} SIP/2.0", this.Method, this.To.ToString(false));
 
-            if (bodies.Length > 0)
-            {
-                bodyBuilder.AppendLine();
-                bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
-                foreach (var b in bodies)
+                var bodies = this.GetBodies();
+                if (bodies.Length > 0)
                 {
-                    bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
-                    foreach (var kvp in b.Headers)
-                    {
-                        bodyBuilder.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
-                    }
-
-                    bodyBuilder.Append("\r\n");
-                    bodyBuilder.AppendLine(b.ContentText);
-                    bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                    this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
                 }
 
-                bodyBuilder.Length = bodyBuilder.Length - 2;
-                bodyBuilder.AppendLine("--");
-                this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture); // content length does not counts on last 2 digits
-            }
+                var bodyBuilder = new StringBuilder();
 
-            foreach (DictionaryEntry kvp in this.Headers)
-            {
-                sb.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
-            }
+                if (bodies.Length > 0)
+                {
+                    bodyBuilder.AppendLine();
+                    bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                    foreach (var b in bodies)
+                    {
+                        bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
+                        foreach (var kvp in b.Headers)
+                        {
+                            bodyBuilder.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
+                        }
 
-            if (bodyBuilder.Length > 0)
-            {
-                sb.Append(bodyBuilder);
-            }
+                        bodyBuilder.Append("\r\n");
+                        bodyBuilder.AppendLine(b.ContentText);
+                        bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                    }
 
-            return sb.ToString();
+                    bodyBuilder.Length = bodyBuilder.Length - 2;
+                    bodyBuilder.AppendLine("--");
+                    this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture);
+                    // content length does not counts on last 2 digits
+                }
+
+                foreach (DictionaryEntry kvp in this.Headers)
+                {
+                    sb.WriteLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
+                }
+
+                if (bodyBuilder.Length > 0)
+                {
+                    sb.Write(bodyBuilder);
+                }
+                sb.Flush();
+                return ms.ToArray();
+            }
         }
 
         public abstract void Deserialize(byte[] buffer);
@@ -108,11 +125,11 @@ namespace SipStack
         {
             return new Body[0];
         }
-        
+
         protected void ParseRequestLine(string line)
         {
-            this.Method = line.Substring(0, 3);
-            this.To = line.Substring(3, line.Length - 10);
+            this.Method = line.Substring(0, line.IndexOf(' '));
+            this.Headers["To"] = Contact.Parse(line.Substring(line.IndexOf(' ') + 1, line.Length - line.IndexOf(' ') - 9));
         }
 
         protected void ParseHeader(string line)

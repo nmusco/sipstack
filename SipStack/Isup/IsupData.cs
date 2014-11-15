@@ -66,10 +66,10 @@
 
         public IsupMessageType IsupType { get; private set; }
 
-        public static IsupBody Load(byte[] data)
+        public static IsupBody Load(ByteStream bs)
         {
-            var bs = new ByteStream(data, 0);
-            switch ((IsupMessageType)bs.Read())
+            var type = (IsupMessageType)bs.Read();
+            switch (type)
             {
                 case IsupMessageType.Answer:
                     return new IsupAnswer(bs);

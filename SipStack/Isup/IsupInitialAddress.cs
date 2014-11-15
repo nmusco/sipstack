@@ -54,11 +54,31 @@ namespace SipStack.Isup
 
                 int len = bs.Read();
                 var data = bs.Read(len);
+                IsupParameter p;
+                switch (parameterType)
+                {
+                    case IsupParameterType.CallingPartyNumber:
+                    case IsupParameterType.RedirectingNumber:
+                    case IsupParameterType.OriginalCalledNumber:
+                        p = new IsupPhoneNumberParameter(parameterType);
+                        break;
+                    case IsupParameterType.OptionalForwardCallIndicator:
+                        p = new OptionalForwardCallIndicator();
+                        break;
+                    case IsupParameterType.RedirectionInfo:
+                        p = new RedirectInfo();
+                        break;
+                    default:
+                        p = new OptionalIsupParameter(parameterType, len);
+                        break;
+                }
+                p.LoadParameterData(data);
 
-                ((IsupParameter)this.parameters[parameterType]).LoadParameterData(data);
+
+                this.parameters[parameterType] = p;
             }
         }
-        
+
         /// <summary>
         /// Gets the nature of connection indicator
         /// </summary>
@@ -175,7 +195,7 @@ namespace SipStack.Isup
             this.RedirectingNumber.Number = reader.ReadString();
         }*/
 
-        public T AddOptionalParameter<T>(T isupParameter) where T:IsupParameter
+        public T AddOptionalParameter<T>(T isupParameter) where T : IsupParameter
         {
             this.parameters[isupParameter.ParameterType] = isupParameter;
             return isupParameter;

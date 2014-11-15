@@ -22,9 +22,11 @@ namespace SipStack.Isup
 
         public override void Load(ByteStream byteStream)
         {
-            this.ParameterType = (IsupParameterType)byteStream.Read();
+            this.PointerToParameter = byteStream.Read();
             this.PointerToOptionalParameter = byteStream.Read();
-            this.LoadParameterData(byteStream.Read(byteStream.Read()));
+            
+            var parameterLength = byteStream.Read();
+            this.LoadParameterData(byteStream.Read(parameterLength));
         }
     }
 }

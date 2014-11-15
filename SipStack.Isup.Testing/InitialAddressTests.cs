@@ -1,6 +1,8 @@
-namespace SipStack.Isup.Testing
+namespace SipStack.Tests.Isup
 {
     using NUnit.Framework;
+
+    using SipStack.Isup;
 
     [TestFixture]
     public class InitialAddressTests

@@ -3,16 +3,17 @@ namespace SipStack.Isup
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text;
 
     public static class IsupUtility
     {
-        internal static string UnReverseNumber(byte[] buffer, int start, bool isOdd)
+        public static string UnReverseNumber(byte[] buffer, int start, bool isOdd)
         {
             var sb = new StringBuilder();
             for (var i = start; i < buffer.Length; i++)
             {
-                sb.Append(buffer[i].ToString("D2"));
+                sb.Append(string.Concat(buffer[i].ToString("X2").Reverse()));
             }
 
             var str = sb.ToString();
@@ -26,7 +27,7 @@ namespace SipStack.Isup
             return str.Substring(0, str.Length - 2) + lastDigit[0];
         }
 
-        internal static IEnumerable<byte> GetReversedNumber(string number)
+        public static IEnumerable<byte> GetReversedNumber(string number)
         {
             var isEven = (number.Length % 2) == 0;
             for (var i = 0; i < number.Length; i += 2)
