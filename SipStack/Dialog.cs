@@ -2,10 +2,10 @@ namespace SipStack
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
-    using System.Runtime.Remoting.Messaging;
     using System.Text;
     using System.Threading;
 
@@ -15,15 +15,121 @@ namespace SipStack
     {
         private static long sdpIds = 1000;
 
+        private int callSequence = 1;
+
         private readonly IPEndPoint remoteHost;
 
         private readonly UdpClient connection;
+
+        private readonly OrderedDictionary customHeaders = new OrderedDictionary();
+
+        private readonly IDictionary<string, Action<SipMessage, SipMessage>> messageHandlers = new Dictionary<string, Action<SipMessage, SipMessage>>(StringComparer.InvariantCultureIgnoreCase);
 
         private Dialog(string callId, IPEndPoint remoteHost)
         {
             this.remoteHost = remoteHost;
             this.CallId = callId;
             this.connection = new UdpClient(5060);
+            this.messageHandlers["INVITE"] = this.HandleInviteSend;
+            this.messageHandlers["100"] = this.Handle100Trying;
+            this.messageHandlers["183"] = this.Handle183;
+        }
+
+        private void HandleInviteSend(SipMessage last, SipMessage current)
+        {
+            if (last != null)
+            {
+                throw new InvalidOperationException("invite message is the first");
+            }
+
+            current.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " INVITE";
+
+            this.Send(current);
+            SipMessage next = this.WaitAndResend(current, new[] { 1000, 2000, 5000 });
+
+            if (next == null)
+            {
+                // TODO: Generate 408 or throw exception
+                throw new TimeoutException("cant send invite after specified period");
+            }
+
+            this.PostMessage(current, next);
+        }
+
+        private void Handle100Trying(SipMessage last, SipMessage current)
+        {
+            // do nothing, wait for 183
+
+            var range = new[] { 1000, 2000, 5000 };
+            // does not send message, only waits for provisional message
+            var next = this.WaitAndResend(null, range) as SipResponse;
+
+            if (next == null)
+            {
+                throw new TimeoutException("dead while wait for 183");
+            }
+
+            if (next.StatusCode != 183)
+            {
+                throw new InvalidOperationException(string.Format("Cant handle {0} in this state {1}", next.StatusCode, "100"));
+            }
+
+            this.PostMessage(last, next);
+        }
+
+        private void Handle183(SipMessage last, SipMessage current)
+        {
+            var msg = new SipMessage("PRACK");
+            var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
+            foreach (var c in headersToCopy)
+            {
+                msg.Headers[c] = current.Headers[c];
+            }
+
+            msg.Headers["Max-Forwards"] = "70";
+            msg.Headers["Content-Length"] = "0";
+            msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence).ToString() + " PRACK";
+            msg.Headers["RAck"] = string.Format("{0} {1}", current.Headers["RSeq"], current.Headers["CSeq"]);
+
+            this.Send(msg);
+        }
+
+        private SipMessage WaitAndResend(SipMessage currentMessage, IEnumerable<int> timers)
+        {
+            SipMessage next = null;
+            foreach (var t1 in timers)
+            {
+                if (this.TryGetNextMessage(t1, out next))
+                {
+                    break;
+                }
+
+                if (currentMessage != null)
+                {
+                    // try again
+                    this.Send(currentMessage);
+                }
+            }
+
+            return next;
+        }
+
+        private void Send(SipMessage msg)
+        {
+            var dgram = msg.Serialize();
+            Console.WriteLine(Encoding.Default.GetString(dgram));
+            this.connection.Send(dgram, dgram.Length, this.remoteHost);
+        }
+
+        private void PostMessage(SipMessage lastMessage, SipMessage current)
+        {
+            var method = current.Method;
+            if (!this.messageHandlers.ContainsKey(current.Method))
+            {
+                throw new InvalidOperationException(string.Format("cant handle {0} method", current.Method));
+            }
+
+            this.messageHandlers[method](lastMessage, current);
         }
 
         public string CallId { get; set; }
@@ -43,66 +149,64 @@ namespace SipStack
                 .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", media.LocalEndpoint.Port))
                 .AddParameter("a", "rtpmap:8 PCMA/8000")
                 .AddParameter("a", "rtpmap:101 telephone-event/8000")
-                //.AddParameter("a", "fmtp:8 mode-set=3,6; mode-change-period=2; mode-change-neighbor=1; max-red=0")
                 .AddParameter("a", "fmtp:101 0-15")
                 .AddParameter("a", "sendrecv");
-            
-            var isup = invite.IsupData = new IsupInitialAddress();
+
+            var isup = new IsupInitialAddress();
+            invite.IsupData = isup;
             isup.NatureOfConnectionIndicator.EchoControlIncluded = false;
-            isup.NatureOfConnectionIndicator.SatelliteIndicator =NatureOfConnection.SatelliteIndicatorFlags.One;
+            isup.NatureOfConnectionIndicator.SatelliteIndicator = NatureOfConnection.SatelliteIndicatorFlags.One;
             isup.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
             isup.CallingPartyCategory.LoadParameterData(new byte[] { 0xe0 });
-
 
             isup.CalledNumber.Number = new string(invite.To.Address.TakeWhile(a => a != '@').ToArray());
 
             isup.CalledNumber.NumberingFlags = NAIFlags.RoutingNotAllowed | NAIFlags.Isdn;
             isup.CalledNumber.Flags = PhoneFlags.NAINationalNumber;
-            ;
 
             var callingNumber = invite.IsupData.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = invite.From.Address.Split('@').FirstOrDefault() });
 
             callingNumber.NumberingFlags |= NAIFlags.ScreeningVerifiedAndPassed | NAIFlags.NetworProvided;
             isup.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.OriginalCalledNumber)
-                                          {
-                                              Number = callerContact.Address.Split('@').FirstOrDefault(), 
-                                              Flags = callingNumber.Flags, NumberingFlags = NAIFlags.PresentationRestricted |NAIFlags.Isdn
-                                          });
+                                        {
+                                            Number = callerContact.Address.Split('@').FirstOrDefault(),
+                                            Flags = callingNumber.Flags,
+                                            NumberingFlags = NAIFlags.PresentationRestricted | NAIFlags.Isdn
+                                        });
 
-            isup.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.RedirectingNumber) { Number = callerContact.Address.Split('@').FirstOrDefault(), Flags = callingNumber.Flags,
-                                                                                                          NumberingFlags = NAIFlags.PresentationRestricted | NAIFlags.Isdn
-            });
+            isup.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.RedirectingNumber)
+                                        {
+                                            Number = callerContact.Address.Split('@').FirstOrDefault(),
+                                            Flags = callingNumber.Flags,
+                                            NumberingFlags = NAIFlags.PresentationRestricted | NAIFlags.Isdn
+                                        });
 
-            isup.AddOptionalParameter(new RedirectInfo() { RedirectReason = RedirReason.NoReply, RedirectCounter = 1, RedirectIndicatorFlags = RedirectInfo.RedirectIndicator.CallDiverted });
+            isup.AddOptionalParameter(new RedirectInfo { RedirectReason = RedirReason.NoReply, RedirectCounter = 1, RedirectIndicatorFlags = RedirectInfo.RedirectIndicator.CallDiverted });
 
             invite.Headers["Via"] = string.Format(
                 "SIP/2.0/UDP {0}:5060;branch=z9hG4bK7fe{1}",
                 media.LocalEndpoint.Address,
                 DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
-            var response = dlg.SendAndWaitResponse(invite);
+            dlg.PostMessage(null, invite);
             return dlg;
         }
 
-        private SipMessage SendAndWaitResponse(InviteMessage invite)
+        private bool TryGetNextMessage(int timeout, out SipMessage msg)
         {
-            var dgram = invite.Serialize();
-            this.connection.Send(dgram, dgram.Length, this.remoteHost);
-
             var resp = this.connection.ReceiveAsync();
 
-            if (!resp.Wait(5000))
+            if (!resp.Wait(timeout))
             {
+                msg = null;
                 // generate 408 timeout
-                throw new TimeoutException();
+                return false;
             }
 
             // TODO: copy custom headers as record route
             var data = resp.Result.Buffer;
-
-            var result = SipResponse.Parse(data);
             Console.WriteLine(Encoding.Default.GetString(data));
-
-            throw new NotImplementedException();
+            msg = SipMessage.Parse(data);
+            return true;
         }
     }
 }

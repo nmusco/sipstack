@@ -34,11 +34,7 @@ namespace SipStack.Tests
             {
                 var exp = SampleIsupData[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
                 var act = txt[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
-                var areEqual = exp == act;
-                if (!areEqual)
-                {
-                    Assert.Fail("Error in parameter at position {0}. Expected {1}. Actual {2}. \nexpected:\t{3}.\nactual: \t{4} ", i, exp, act, SampleIsupData.ToUpperInvariant(), txt.ToUpperInvariant());
-                }
+                Assert.AreEqual(act, exp);
             }
         }
 
@@ -52,7 +48,7 @@ namespace SipStack.Tests
             initialAddress.NatureOfConnectionIndicator.SatelliteIndicator = NatureOfConnection.SatelliteIndicatorFlags.One;
             initialAddress.NatureOfConnectionIndicator.ContinuityCheckIndicator = NatureOfConnection.ContinuityCheckIndicatorFlags.NotRequired;
             initialAddress.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
-            initialAddress.CallingPartyCategory.CategoryFlags = SipStack.Isup.CallingPartyCategory.Category.Unknown;
+            initialAddress.CallingPartyCategory.CategoryFlags = CallingPartyCategory.Category.Unknown;
 
             initialAddress.CalledNumber.Number = "15495";
             initialAddress.CalledNumber.NumberingFlags = NAIFlags.Isdn;
@@ -78,11 +74,8 @@ namespace SipStack.Tests
             {
                 var exp = SampleIsupData[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
                 var act = txt[i].ToString(CultureInfo.InvariantCulture).ToUpperInvariant();
-                var areEqual = exp == act;
-                if (!areEqual)
-                {
-                    Assert.Fail("Error in parameter at position {0}. Expected {1}. Actual {2}. \nexpected:\t{3}.\nactual: \t{4} ", i, exp, act, SampleIsupData.ToUpperInvariant(), txt.ToUpperInvariant());
-                }
+
+                Assert.AreEqual(act, exp);
             }
         }
     }

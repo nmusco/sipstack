@@ -18,7 +18,7 @@ namespace SipStack.Tests.Sip
         public void DeserializeInviteMessageWithIsupAndSdp(bool includeIsup, bool includeSdp)
         {
             var callId = "ABC";
-            Contact to = "15499@10.0.8.44:5060;user=phone";
+            Contact to = "b100@10.0.8.44:5060;user=phone";
             var @from = new Contact(
                 "11992971721@10.0.5.25:5060",
                 null,
@@ -47,7 +47,8 @@ namespace SipStack.Tests.Sip
 
             if (includeIsup)
             {
-                var isup = invite.IsupData = new IsupInitialAddress();
+                var isup = new IsupInitialAddress();
+                invite.IsupData = isup;
                 isup.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
                 isup.CallingPartyCategory.CategoryFlags = CallingPartyCategory.Category.Unknown;
                 isup.NatureOfConnectionIndicator.EchoControlIncluded = false;

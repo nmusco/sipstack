@@ -9,7 +9,9 @@ namespace SipStack
     using System.Linq;
     using System.Text;
 
-    public abstract class SipMessage
+    using SipStack.Isup;
+
+    public class SipMessage
     {
         private const string BoundaryId = "unique-boundary-1";
 
@@ -18,16 +20,17 @@ namespace SipStack
             this.Headers = new OrderedDictionary();
         }
 
-        protected SipMessage(string method)
-            : this()
-        {
-            this.Method = method;
-        }
-
         protected SipMessage(Contact to, string method)
             : this(method)
         {
             this.Headers["To"] = to;
+        }
+
+        public SipMessage(string method)
+            : this()
+        {
+            this.Method = method;
+            this.Headers["Allow"] = "INVITE, ACK, PRACK, CANCEL, BYE, OPTIONS, MESSAGE, NOTIFY, UPDATE, REGISTER, INFO, REFER, SUBSCRIBE, PUBLISH";
         }
 
         public Contact To
@@ -44,20 +47,61 @@ namespace SipStack
             }
         }
 
-        public string Method { get; private set; }
+        public Sdp SdpData { get; set; }
+
+        public IsupBody IsupData { get; set; }
+
+        public Contact From
+        {
+            get
+            {
+                var h = this.Headers["From"];
+                if (h is string)
+                {
+                    return (Contact)(this.Headers["From"] = Contact.Parse(h.ToString()));
+                }
+
+                return (Contact)h;
+            }
+        }
+
+        public Contact Contact
+        {
+            get
+            {
+                var h = this.Headers["Contact"];
+                if (h is string)
+                {
+                    return (Contact)(this.Headers["Contact"] = Contact.Parse(h.ToString()));
+                }
+
+                return (Contact)h;
+            }
+        }
+
+        public string Method { get; protected set; }
 
         public OrderedDictionary Headers { get; private set; }
 
         public static SipMessage Parse(byte[] buffer)
         {
-            var cmd = buffer.TakeWhile(a => a != ' ').ToArray();
-            switch (Encoding.Default.GetString(cmd, 0, cmd.Length).ToLowerInvariant())
+            var cmd = Encoding.Default.GetString(buffer.TakeWhile(a => a != ' ').ToArray()).ToLowerInvariant();
+            switch (cmd)
             {
-                case "bye":
-                    return new ByeRequest(buffer);
                 case "invite":
                     return new InviteMessage(buffer);
-                default: throw new InvalidOperationException();
+                case "sip/2.0":
+                    int responseCode;
+
+                    var str = string.Concat(buffer.Skip(cmd.Length + 1).Take(3).ToArray());
+
+                    if (int.TryParse(str, out responseCode))
+                    {
+                        return new SipResponse(buffer);
+                    }
+                    throw new InvalidOperationException("response code not understood: " + str);
+                default:
+                    return Parse(buffer);
             }
         }
 
@@ -109,15 +153,16 @@ namespace SipStack
                         }
                     }
 
+                    bodyBuilder.Length = bodyBuilder.Length - 2;
                     if (bodies.Length > 1)
                     {
-                        bodyBuilder.Length = bodyBuilder.Length - 2;
                         bodyBuilder.AppendLine("--");
                     }
 
                     // content length does not counts on last 2 digits
                     this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture);
                 }
+
 
                 foreach (DictionaryEntry kvp in this.Headers)
                 {
@@ -128,13 +173,17 @@ namespace SipStack
                 {
                     sb.Write(bodyBuilder);
                 }
+                else
+                {
+                    sb.WriteLine();
+                }
 
                 sb.Flush();
                 return ms.ToArray();
             }
         }
 
-        protected IEnumerable<Body> ParseBuffer(byte[] buffer)
+        protected void ParseBuffer(byte[] buffer)
         {
             var bs = new ByteStream(buffer, 0);
             this.ParseRequestLine(bs.ReadLine());
@@ -142,21 +191,39 @@ namespace SipStack
 
             foreach (var l in bs.Lines())
             {
-                if (l == string.Empty)
+                if (l == string.Empty && this.Headers.Contains("Content-Length") && this.Headers["Content-Length"].ToString() != "0")
                 {
                     bodies.AddRange(SipResponse.BodyParser.Parse(this.Headers["Content-Type"].ToString(), bs.Read(bs.Length - bs.Position)).ToList());
                 }
                 else
                 {
-                    this.ParseHeader(l);
+                    if (!string.IsNullOrWhiteSpace(l))
+                    {
+                        this.ParseHeader(l);
+                    }
                 }
             }
-            return bodies;
+
+            this.SdpData = bodies.OfType<Sdp>().FirstOrDefault();
+            this.IsupData = bodies.OfType<IsupBody>().FirstOrDefault();
         }
 
-        protected abstract Body[] GetBodies();
+        protected virtual Body[] GetBodies()
+        {
+            if (this.IsupData != null && this.SdpData != null)
+            {
+                return new Body[] { this.SdpData, this.IsupData };
+            }
 
-        protected void ParseRequestLine(string line)
+            if (this.SdpData != null)
+            {
+                return new Body[] { this.SdpData };
+            }
+
+            return this.IsupData != null ? new Body[] { this.IsupData } : new Body[0];
+        }
+
+        protected virtual void ParseRequestLine(string line)
         {
             this.Method = line.Substring(0, line.IndexOf(' '));
             this.Headers["To"] = Contact.Parse(line.Substring(line.IndexOf(' ') + 1, line.Length - line.IndexOf(' ') - 9));

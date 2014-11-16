@@ -1,4 +1,4 @@
- namespace SipStack.Isup
+namespace SipStack.Isup
 {
     using System;
     using System.Collections.Generic;
@@ -9,7 +9,8 @@
     {
         Answer = 0x09,
         Release = 0x0c,
-        IAM = 0x1
+        IAM = 0x1,
+        AddressComplete = 0x6
     }
 
     public enum RedirReason
@@ -44,7 +45,11 @@
 
         UserServiceInformation = 0x1d,
 
-        MLPPPrecedence = 0x3A
+        MLPPPrecedence = 0x3A,
+
+        OptionalBackwardCall = 0x29,
+
+        CauseIndicator = 0x18
     }
 
     public abstract class IsupBody : Body
@@ -73,9 +78,11 @@
             {
                 case IsupMessageType.IAM:
                     return new IsupInitialAddress(bs);
-                default:
-                    throw new NotImplementedException();
+
+                case IsupMessageType.AddressComplete:
+                    return new IsupAddressComplete(bs);
             }
+            throw new NotImplementedException();
         }
 
         public byte[] GetByteArray()
@@ -107,10 +114,24 @@
                 h.Load(bs);
             }
 
-            this.GetRequiredParameter().Load(bs);
+            var required = this.GetRequiredParameter();
+            if (required != null)
+            {
+                required.Load(bs);
+            }
 
             while (true)
             {
+                if (required == null)
+                {
+                    var startOfOptionalParameter = bs.Read();
+
+                    if (startOfOptionalParameter == 0)
+                    {
+                        break;
+                    }
+                }
+
                 var parameterType = (IsupParameterType)bs.Read();
                 if (parameterType == IsupParameterType.EndOfOptionalParameters)
                 {
@@ -145,6 +166,6 @@
 
         protected abstract IEnumerable<IsupParameter> GetOptionalParameters();
 
-        protected abstract IEnumerable<IsupParameter> GetOptionalHeaders();    
+        protected abstract IEnumerable<IsupParameter> GetOptionalHeaders();
     }
 }
