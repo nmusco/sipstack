@@ -167,26 +167,18 @@ namespace SipStack
             var callingNumber = invite.IsupData.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = invite.From.Address.Split('@').FirstOrDefault() });
 
             callingNumber.NumberingFlags |= NAIFlags.ScreeningVerifiedAndPassed | NAIFlags.NetworProvided;
-            isup.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.OriginalCalledNumber)
-                                        {
-                                            Number = callerContact.Address.Split('@').FirstOrDefault(),
-                                            Flags = callingNumber.Flags,
-                                            NumberingFlags = NAIFlags.PresentationRestricted | NAIFlags.Isdn
-                                        });
 
-            isup.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.RedirectingNumber)
-                                        {
-                                            Number = callerContact.Address.Split('@').FirstOrDefault(),
-                                            Flags = callingNumber.Flags,
-                                            NumberingFlags = NAIFlags.PresentationRestricted | NAIFlags.Isdn
-                                        });
+            if (callerContact != null)
+            {
+                isup.AddOptionalParameter(IsupParameter.OriginalCalledNumber(callerContact, callingNumber.Flags));
 
-            isup.AddOptionalParameter(new RedirectInfo { RedirectReason = RedirReason.NoReply, RedirectCounter = 1, RedirectIndicatorFlags = RedirectInfo.RedirectIndicator.CallDiverted });
+                isup.AddOptionalParameter(IsupParameter.RedirectingNumber(callerContact, callingNumber.Flags));
 
-            invite.Headers["Via"] = string.Format(
-                "SIP/2.0/UDP {0}:5060;branch=z9hG4bK7fe{1}",
-                media.LocalEndpoint.Address,
-                DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
+                isup.AddRedirInfo();
+            }
+
+            invite.Headers["Via"] = string.Format("SIP/2.0/UDP {0}:5060;rport;branch=z9hG4bK7fe{1}", sipAddress, DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
+
             dlg.PostMessage(null, invite);
             return dlg;
         }
