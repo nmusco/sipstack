@@ -1,13 +1,15 @@
 namespace SipStack
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
-    using System.Net.Sockets;
     using System.Threading;
 
     public class MediaGateway
     {
         private const int InitialPort = 10115;
+
+        private static readonly IDictionary<AudioCodec, Func<IPEndPoint, Media>> CodecFactory = new Dictionary<AudioCodec, Func<IPEndPoint, Media>>();
 
         private static int currentPort = InitialPort;
 
@@ -18,63 +20,22 @@ namespace SipStack
 
         public static Media CreateMedia(AudioCodec codec, string localAddress)
         {
+            if (!CodecFactory.ContainsKey(codec))
+            {
+                throw new ArgumentOutOfRangeException("codec", string.Format("Factory for codec {0} not found", codec));
+            }
+
             var nextPort = Interlocked.Increment(ref currentPort);
             Interlocked.CompareExchange(ref currentPort, InitialPort, InitialPort);
 
             var localEp = new IPEndPoint(IPAddress.Parse(localAddress), nextPort);
 
-            return new Media(localEp);
+            return CodecFactory[codec](localEp);
         }
 
-        public class Media
+        public static void RegisterCodec(AudioCodec codec, Func<IPEndPoint, Media> factory)
         {
-            private readonly UdpClient receiveSocket;
-
-            private UdpClient sendSocket;
-
-            internal Media(IPEndPoint localEndpoint)
-            {
-                this.LocalEndpoint = localEndpoint;
-                this.receiveSocket = new UdpClient(this.LocalEndpoint);
-            }
-
-            public IPEndPoint RemoteEndpoint { get; private set; }
-
-            public IPEndPoint LocalEndpoint { get; private set; }
-
-            public void AddSample(byte[] data)
-            {
-                var r = this.sendSocket.SendAsync(data, data.Length, this.RemoteEndpoint);
-
-                if (!r.Wait(50))
-                {
-                    // TODO: generate packet loss
-                }
-
-                r.Dispose();
-            }
-
-            public byte[] GetSample()
-            {
-                var udpData = this.receiveSocket.ReceiveAsync();
-                if (!udpData.Wait(50))
-                {
-                    // TODO: get codec info
-                    return new byte[160];
-                }
-
-                if (!udpData.Result.RemoteEndPoint.Equals(this.RemoteEndpoint))
-                {
-                    throw new InvalidOperationException("sender remote endpoint not same as initial remote endpoint");
-                }
-
-                return udpData.Result.Buffer;
-            }
-
-            public void SetRemoteEndpoint(string address, int port)
-            {
-                this.RemoteEndpoint = new IPEndPoint(IPAddress.Parse(address), port);
-            }
+            CodecFactory[codec] = factory;
         }
     }
 }

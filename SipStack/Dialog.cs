@@ -91,6 +91,15 @@ namespace SipStack
             msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " PRACK";
             msg.Headers["RAck"] = string.Format("{0} {1}", current.Headers["RSeq"], current.Headers["CSeq"]);
 
+            //this.media.SetRemoteEndpoint();
+
+            var ipAddress = current.SdpData.Parameters.FirstOrDefault(a => a.Key == "c").Value.Split(' ').Last();
+
+            var remotePort =
+                current.SdpData.Parameters.FirstOrDefault(a => a.Key == "m" && a.Value.StartsWith("audio")).Value.Split(' ').Skip(1).First();
+
+            this.media.SetRemoteEndpoint(new IPEndPoint(IPAddress.Parse(ipAddress), int.Parse(remotePort)));
+
             this.Send(msg);
         }
 

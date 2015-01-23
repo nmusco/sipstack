@@ -17,6 +17,8 @@ namespace SipStack.Tests.Sip
         [TestCase(false, false)]
         public void DeserializeInviteMessageWithIsupAndSdp(bool includeIsup, bool includeSdp)
         {
+            MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, a => new AlawMedia(a));
+
             var callId = "ABC";
             Contact to = "b100@10.0.8.44:5060;user=phone";
             var @from = new Contact(
@@ -29,7 +31,7 @@ namespace SipStack.Tests.Sip
             Contact callerContact = "11972527144@10.0.5.25:5060";
 
             var invite = new InviteMessage(callId, to, @from, @from);
-            MediaGateway.Media media = null;
+            Media media = null;
 
             if (includeSdp)
             {
