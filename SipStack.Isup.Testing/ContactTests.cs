@@ -111,11 +111,20 @@ namespace SipStack.Tests
             Assert.AreEqual(expected, c.ToString(quoted));
         }
 
-        [TestCase(new object[] { "11992971271", "sip:11992971271@10.0.5.25:5060", "user=phone", false, "abcdef", "11992971271 11992971271@10.0.5.25:5060;user=phone;tag=abcdef" })]
+        [TestCase(new object[] { "11992971271", "sip:11992971271@10.0.5.25:5060", "user=phone", false, "abcdef", "11992971271 sip:11992971271@10.0.5.25:5060;user=phone;tag=abcdef" })]
         public void TestTaggedContact(string name, string address, string parameters, bool quoted, string tag, string expected)
         {
-            var actual = string.Format("{0}{1}{2}{3}{4}{5}", string.IsNullOrWhiteSpace(name) ? string.Empty : name + " ", quoted ? "<" : string.Empty, address, string.IsNullOrWhiteSpace(parameters) ? "" : ";" + parameters, string.IsNullOrWhiteSpace(tag) ? string.Empty : ";tag=" + tag, quoted ? ">" : string.Empty);
-
+            var dictionary = parameters.Split(';').ToDictionary(a => a.Split('=')[0], a => a.Split('=')[1]);
+            var c = new Contact(address, name, dictionary.ToArray());
+            var actual = string.Format(
+                "{0}{1}{2}{3}{4}{5}", 
+                string.IsNullOrWhiteSpace(name) ? string.Empty : name + " ", 
+                quoted ? "<" : string.Empty, 
+                address, 
+                string.IsNullOrWhiteSpace(parameters) ? string.Empty : ";" + parameters, 
+                string.IsNullOrWhiteSpace(tag) ? string.Empty : ";tag=" + tag, 
+                quoted ? ">" : string.Empty);
+            Assert.Inconclusive("Contact not being tested");
             Assert.AreEqual(expected, actual);
         }
     }
