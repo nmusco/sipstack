@@ -83,7 +83,7 @@ namespace SipStack
             var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
             foreach (var c in headersToCopy)
             {
-                msg.Headers[c] = current.Headers[c];
+                msg.Headers[c] = last.Headers[c];
             }
 
             msg.Headers["Max-Forwards"] = "70";
