@@ -35,7 +35,7 @@
             //    }
             //}
             //Console.ReadLine();
-            MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, a => new AlawMedia(a));
+            MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, a => new AlawMediaCodecCodec(a));
             var @from = new Contact(
                 "11992971721@10.0.5.25:5060",
                 null,

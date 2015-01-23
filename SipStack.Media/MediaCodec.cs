@@ -1,4 +1,4 @@
-namespace SipStack
+namespace SipStack.Media
 {
     using System;
     using System.Diagnostics;
@@ -6,7 +6,7 @@ namespace SipStack
     using System.Net.Sockets;
     using System.Threading.Tasks;
 
-    public abstract class Media : IDisposable
+    public abstract class MediaCodec : IDisposable
     {
         private readonly UdpClient receiveSocket;
         
@@ -14,7 +14,7 @@ namespace SipStack
 
         private bool disposed;
 
-        internal Media(IPEndPoint localEndpoint)
+        protected MediaCodec(IPEndPoint localEndpoint)
         {
             this.LocalEndpoint = localEndpoint;
             this.receiveSocket = new UdpClient(this.LocalEndpoint);
@@ -58,7 +58,7 @@ namespace SipStack
             }
         }
 
-        internal void SetRemoteEndpoint(IPEndPoint remoteEndpoint)
+        public void SetRemoteEndpoint(IPEndPoint remoteEndpoint)
         {
             this.RemoteEndpoint = remoteEndpoint;
         }

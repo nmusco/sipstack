@@ -5,11 +5,13 @@ namespace SipStack
     using System.Net;
     using System.Threading;
 
+    using SipStack.Media;
+
     public class MediaGateway
     {
         private const int InitialPort = 10115;
 
-        private static readonly IDictionary<AudioCodec, Func<IPEndPoint, Media>> CodecFactory = new Dictionary<AudioCodec, Func<IPEndPoint, Media>>();
+        private static readonly IDictionary<AudioCodec, Func<IPEndPoint, MediaCodec>> CodecFactory = new Dictionary<AudioCodec, Func<IPEndPoint, MediaCodec>>();
 
         private static int currentPort = InitialPort;
 
@@ -18,7 +20,7 @@ namespace SipStack
             G711Alaw
         }
 
-        public static Media CreateMedia(AudioCodec codec, string localAddress)
+        public static MediaCodec CreateMedia(AudioCodec codec, string localAddress)
         {
             if (!CodecFactory.ContainsKey(codec))
             {
@@ -33,7 +35,7 @@ namespace SipStack
             return CodecFactory[codec](localEp);
         }
 
-        public static void RegisterCodec(AudioCodec codec, Func<IPEndPoint, Media> factory)
+        public static void RegisterCodec(AudioCodec codec, Func<IPEndPoint, MediaCodec> factory)
         {
             CodecFactory[codec] = factory;
         }

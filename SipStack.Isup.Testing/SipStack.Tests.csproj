@@ -68,6 +68,10 @@
     <Compile Include="Sip\SipResponseTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SipStack.Media\SipStack.Media.csproj">
+      <Project>{55A32FB9-5C9F-42C2-B0C2-1FBFEB6AA1DE}</Project>
+      <Name>SipStack.Media</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SipStack\SipStack.csproj">
       <Project>{d6ffac87-7761-441e-a069-e19037a2cce1}</Project>
       <Name>SipStack</Name>

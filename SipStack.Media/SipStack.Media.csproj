@@ -52,8 +52,10 @@
       <Link>fmod_memoryinfo.cs</Link>
     </Compile>
     <Compile Include="FmodSoundsystem.cs" />
+    <Compile Include="MediaCodec.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RtpPayload.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

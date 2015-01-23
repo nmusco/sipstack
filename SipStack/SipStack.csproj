@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -41,7 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AlawMedia.cs" />
+    <Compile Include="AlawMediaCodecCodec.cs" />
     <Compile Include="Body.cs" />
     <Compile Include="ByeRequest.cs" />
     <Compile Include="ByteStream.cs" />
@@ -68,7 +69,6 @@
     <Compile Include="Isup\PhoneFlags.cs" />
     <Compile Include="Isup\RedirectInfo.cs" />
     <Compile Include="Isup\RequiredIsupParameter.cs" />
-    <Compile Include="Media.cs" />
     <Compile Include="MediaGateway.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -78,6 +78,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SipStack.Media\SipStack.Media.csproj">
+      <Project>{55a32fb9-5c9f-42c2-b0c2-1fbfeb6aa1de}</Project>
+      <Name>SipStack.Media</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

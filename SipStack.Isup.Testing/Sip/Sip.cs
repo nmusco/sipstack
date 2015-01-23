@@ -7,6 +7,7 @@ namespace SipStack.Tests.Sip
     using NUnit.Framework;
 
     using SipStack.Isup;
+    using SipStack.Media;
 
     [TestFixture]
     public class Sip
@@ -17,7 +18,7 @@ namespace SipStack.Tests.Sip
         [TestCase(false, false)]
         public void DeserializeInviteMessageWithIsupAndSdp(bool includeIsup, bool includeSdp)
         {
-            MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, a => new AlawMedia(a));
+            MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, a => new AlawMediaCodecCodec(a));
 
             var callId = "ABC";
             Contact to = "b100@10.0.8.44:5060;user=phone";
@@ -31,17 +32,17 @@ namespace SipStack.Tests.Sip
             Contact callerContact = "11972527144@10.0.5.25:5060";
 
             var invite = new InviteMessage(callId, to, @from, @from);
-            Media media = null;
+            MediaCodec mediaCodec = null;
 
             if (includeSdp)
             {
-                media = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw, localIp);
+                mediaCodec = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw, localIp);
                 invite.SdpData = new Sdp();
-                invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", 10, media.LocalEndpoint.Address))
+                invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", 10, mediaCodec.LocalEndpoint.Address))
                     .AddParameter("s", "-")
                     .AddParameter("c", "IN IP4 " + localIp)
                     .AddParameter("t", "0 0")
-                    .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", media.LocalEndpoint.Port))
+                    .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", mediaCodec.LocalEndpoint.Port))
                     .AddParameter("a", "rtpmap:8 PCMA/8000")
                     .AddParameter("a", "rtpmap:101 telephone-event/8000")
                     .AddParameter("a", "fmtp:101 0-15").AddParameter("a", "sendrecv");
@@ -88,7 +89,7 @@ namespace SipStack.Tests.Sip
             {
                 invite.Headers["Via"] = string.Format(
                 "SIP/2.0/UDP {0}:5060;branch=z9hG4bK7fe{1}",
-                media.LocalEndpoint.Address,
+                mediaCodec.LocalEndpoint.Address,
                 DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
             }
 
