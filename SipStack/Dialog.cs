@@ -88,7 +88,7 @@ namespace SipStack
 
             msg.Headers["Max-Forwards"] = "70";
             msg.Headers["Content-Length"] = "0";
-            msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence).ToString() + " PRACK";
+            msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " PRACK";
             msg.Headers["RAck"] = string.Format("{0} {1}", current.Headers["RSeq"], current.Headers["CSeq"]);
 
             this.Send(msg);
