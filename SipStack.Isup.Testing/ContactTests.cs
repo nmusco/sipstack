@@ -15,10 +15,9 @@ namespace SipStack.Tests
         [TestCase(null, "abcd@10.0.0.1", null, null)]
         [TestCase(null, "11992971721@10.0.5.25:5060", "user=phone", null)]
         [TestCase(null, null, null, null)]
-        [Test]
         public void TestContactParsing(string name, string address, string kvps, string protocol)
         {
-            string str = string.Empty;
+            var str = string.Empty;
 
             if (name != null)
             {
@@ -110,6 +109,14 @@ namespace SipStack.Tests
             var c = new Contact(address, name, parms.ToArray());
 
             Assert.AreEqual(expected, c.ToString(quoted));
+        }
+
+        [TestCase(new object[] { "11992971271", "sip:11992971271@10.0.5.25:5060", "user=phone", false, "abcdef", "11992971271 11992971271@10.0.5.25:5060;user=phone;tag=abcdef" })]
+        public void TestTaggedContact(string name, string address, string parameters, bool quoted, string tag, string expected)
+        {
+            var actual = string.Format("{0}{1}{2}{3}{4}{5}", string.IsNullOrWhiteSpace(name) ? string.Empty : name + " ", quoted ? "<" : string.Empty, address, string.IsNullOrWhiteSpace(parameters) ? "" : ";" + parameters, string.IsNullOrWhiteSpace(tag) ? string.Empty : ";tag=" + tag, quoted ? ">" : string.Empty);
+
+            Assert.AreEqual(expected, actual);
         }
     }
 }

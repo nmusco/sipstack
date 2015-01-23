@@ -2,7 +2,6 @@ namespace SipStack
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
@@ -15,15 +14,15 @@ namespace SipStack
     {
         private static long sdpIds = 1000;
 
-        private int callSequence = 1;
+        private readonly IDictionary<string, Action<SipMessage, SipMessage>> messageHandlers = new Dictionary<string, Action<SipMessage, SipMessage>>(StringComparer.InvariantCultureIgnoreCase);
 
         private readonly IPEndPoint remoteHost;
 
         private readonly UdpClient connection;
 
-        private readonly OrderedDictionary customHeaders = new OrderedDictionary();
+        private int callSequence = 1;
 
-        private readonly IDictionary<string, Action<SipMessage, SipMessage>> messageHandlers = new Dictionary<string, Action<SipMessage, SipMessage>>(StringComparer.InvariantCultureIgnoreCase);
+        private Media media;
 
         private Dialog(string callId, IPEndPoint remoteHost)
         {
@@ -45,7 +44,7 @@ namespace SipStack
             current.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " INVITE";
 
             this.Send(current);
-            SipMessage next = this.WaitAndResend(current, new[] { 1000, 2000, 5000 });
+            var next = this.WaitAndResend(current, new[] { 1000, 2000, 5000 });
 
             if (next == null)
             {
@@ -59,8 +58,8 @@ namespace SipStack
         private void Handle100Trying(SipMessage last, SipMessage current)
         {
             // do nothing, wait for 183
-
             var range = new[] { 1000, 2000, 5000 };
+
             // does not send message, only waits for provisional message
             var next = this.WaitAndResend(null, range) as SipResponse;
 
@@ -80,6 +79,7 @@ namespace SipStack
         private void Handle183(SipMessage last, SipMessage current)
         {
             var msg = new SipMessage("PRACK");
+
             var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
             foreach (var c in headersToCopy)
             {
@@ -198,6 +198,7 @@ namespace SipStack
             if (!resp.Wait(timeout))
             {
                 msg = null;
+
                 // generate 408 timeout
                 return false;
             }

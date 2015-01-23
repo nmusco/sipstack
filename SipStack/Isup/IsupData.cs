@@ -82,6 +82,7 @@ namespace SipStack.Isup
                 case IsupMessageType.AddressComplete:
                     return new IsupAddressComplete(bs);
             }
+
             throw new NotImplementedException();
         }
 
