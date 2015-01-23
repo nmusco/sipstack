@@ -134,19 +134,19 @@ namespace SipStack
 
         public string CallId { get; set; }
 
-        public static Dialog InitSipCall(IPEndPoint remoteHost, Contact to, Contact @from, Contact callerContact, string localIp)
+        public static Dialog InitSipCall(IPEndPoint remoteHost, Contact to, Contact @from, Contact callerContact, string sipAddress, string rtpAddress = null)
         {
-            var dlg = new Dialog(Guid.NewGuid().ToString() + "@" + localIp, remoteHost);
+            var dlg = new Dialog(Guid.NewGuid() + "@" + sipAddress, remoteHost);
             var invite = new InviteMessage(dlg.CallId, to, @from, @from);
 
-            var media = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw, localIp);
+            dlg.media = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw, rtpAddress ?? sipAddress);
 
             invite.SdpData = new Sdp();
-            invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), media.LocalEndpoint.Address))
+            invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), dlg.media.LocalEndpoint.Address))
                 .AddParameter("s", "-")
-                .AddParameter("c", "IN IP4 " + localIp)
+                .AddParameter("c", "IN IP4 " + sipAddress)
                 .AddParameter("t", "0 0")
-                .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", media.LocalEndpoint.Port))
+                .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", dlg.media.LocalEndpoint.Port))
                 .AddParameter("a", "rtpmap:8 PCMA/8000")
                 .AddParameter("a", "rtpmap:101 telephone-event/8000")
                 .AddParameter("a", "fmtp:101 0-15")
