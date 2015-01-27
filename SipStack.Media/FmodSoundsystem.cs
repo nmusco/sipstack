@@ -11,7 +11,7 @@
     using SipStack.Media.Annotations;
 
     using System = FMOD.System;
-    [Obsolete("Should use Bass Device", true)]
+    [Obsolete("Should use NAudio Device", true)]
     public static class SoundSystem
     {
         static SoundSystem()
@@ -45,7 +45,7 @@
 
         private readonly Stopwatch sw = new Stopwatch();
 
-        [Obsolete("Should use Bass Device", true)]
+        [Obsolete("Should use NAudio Device", true)]
         public RecordingDevice()
         {
             var exinfo = new CREATESOUNDEXINFO();
@@ -60,7 +60,7 @@
             ErrorCheck(result, "Cant initialize sound. Error {0}");
         }
 
-        [Obsolete("Should use Bass Device", true)]
+        [Obsolete("Should use NAudio Device", true)]
         public Func<byte[]> StartRecording(int deviceId)
         {
             sw.Start();
@@ -81,7 +81,7 @@
             return this.GetBuffer;
         }
 
-        [Obsolete("Should use Bass Device", true)]
+        [Obsolete("Should use NAudio Device", true)]
         private byte[] GetBuffer()
         {
             var sampleCount = (uint)(44100 * 2 / 1000 * 100);
