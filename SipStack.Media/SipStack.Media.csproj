@@ -40,19 +40,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="C:\Program Files %28x86%29\FMOD SoundSystem\FMOD Programmers API Windows\api\csharp\fmod.cs">
-      <Link>fmod.cs</Link>
-    </Compile>
-    <Compile Include="C:\Program Files %28x86%29\FMOD SoundSystem\FMOD Programmers API Windows\api\csharp\fmod_dsp.cs">
-      <Link>fmod_dsp.cs</Link>
-    </Compile>
-    <Compile Include="C:\Program Files %28x86%29\FMOD SoundSystem\FMOD Programmers API Windows\api\csharp\fmod_errors.cs">
-      <Link>fmod_errors.cs</Link>
-    </Compile>
-    <Compile Include="C:\Program Files %28x86%29\FMOD SoundSystem\FMOD Programmers API Windows\api\csharp\fmod_memoryinfo.cs">
-      <Link>fmod_memoryinfo.cs</Link>
-    </Compile>
-    <Compile Include="FmodSoundsystem.cs" />
     <Compile Include="IMediaCodec.cs" />
     <Compile Include="IPlaybackDevice.cs" />
     <Compile Include="IRecordingDevice.cs" />

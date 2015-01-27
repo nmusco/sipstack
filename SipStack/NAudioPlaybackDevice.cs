@@ -1,7 +1,6 @@
 namespace SipStack
 {
     using System;
-    using System.ComponentModel;
     using System.Diagnostics;
     using System.Threading;
 
