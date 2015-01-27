@@ -72,6 +72,7 @@
     <Compile Include="MediaGateway.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RtpEvent.cs" />
     <Compile Include="Sdp.cs" />
     <Compile Include="SipMessage.cs" />
     <Compile Include="SipResponse.cs" />

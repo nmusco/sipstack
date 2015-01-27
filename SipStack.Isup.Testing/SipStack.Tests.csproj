@@ -63,6 +63,7 @@
     <Compile Include="Isup\CallingPartyCategory.cs" />
     <Compile Include="Isup\IsupUtilityTest.cs" />
     <Compile Include="Isup\UnitTest1.cs" />
+    <Compile Include="Rtp\RtpEvent.cs" />
     <Compile Include="Sip\Sip.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sip\SipResponseTests.cs" />

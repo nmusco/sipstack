@@ -13,13 +13,16 @@ namespace SipStack.Media
 
         private readonly bool isFirst;
 
+        private readonly byte payloadType;
+
         private readonly short sequenceNumber;
 
-        public RtpPayload(byte[] data, short sequenceNumber, int identifier, long timestamp, bool isFirst)
+        public RtpPayload(byte[] data, short sequenceNumber, int identifier, long timestamp, bool isFirst, byte payloadType = 0x08)
         {
             this.data = data;
             this.timestamp = timestamp;
             this.isFirst = isFirst;
+            this.payloadType = payloadType;
             this.sequenceNumber = sequenceNumber;
             this.identifier = identifier;
         }
@@ -40,13 +43,26 @@ namespace SipStack.Media
             this.data = data.Skip(idx).ToArray();
         }
 
+        public byte[] Data
+        {
+            get
+            {
+                return this.data;
+            }
+        }
+
+        public static RtpPayload Parse(byte[] data)
+        {
+            return new RtpPayload(data);
+        }
+
         public byte[] ToArray()
         {
             var total = new byte[12 + this.data.Length];
             total[0] = 0x80; // version without padding without extension
-            total[1] = (byte)((this.isFirst ? 0x80 : 0x0) | 0x08);
+            total[1] = (byte)((this.isFirst ? 0x80 : 0x0) | this.payloadType);
             var seq = BitConverter.GetBytes(this.sequenceNumber);
-            var ts = BitConverter.GetBytes((int)(this.timestamp % Int32.MaxValue));
+            var ts = BitConverter.GetBytes((int)(this.timestamp % int.MaxValue));
             var id = BitConverter.GetBytes(this.identifier);
             Array.Reverse(seq);
             Array.Reverse(ts);
@@ -59,9 +75,5 @@ namespace SipStack.Media
             return total;
         }
 
-        public static RtpPayload Parse(byte[] data)
-        {
-            return new RtpPayload(data);
-        }
     }
 }
