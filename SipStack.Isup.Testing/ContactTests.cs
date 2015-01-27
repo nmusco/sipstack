@@ -111,21 +111,23 @@ namespace SipStack.Tests
             Assert.AreEqual(expected, c.ToString(quoted));
         }
 
-        [TestCase(new object[] { "11992971271", "sip:11992971271@10.0.5.25:5060", "user=phone", false, "abcdef", "11992971271 sip:11992971271@10.0.5.25:5060;user=phone;tag=abcdef" })]
-        public void TestTaggedContact(string name, string address, string parameters, bool quoted, string tag, string expected)
+        [TestCase(new object[] { "11992971271", "sip:11992971271@10.0.5.25:5060", "user=phone;tag=abcdef", "", false, "abcdef", "11992971271 sip:11992971271@10.0.5.25:5060;user=phone;tag=abcdef" })]
+        [TestCase(new object[] { "11992971271", "sip:11992971271@10.0.5.25:5060", "user=phone", "tag=abcdef", true, "abcdef", "11992971271 <sip:11992971271@10.0.5.25:5060;user=phone>;tag=abcdef" })]
+        public void TestTaggedContact(string name, string address, string parameters, string trailingParameters, bool quoted, string tag, string expected)
         {
             var dictionary = parameters.Split(';').ToDictionary(a => a.Split('=')[0], a => a.Split('=')[1]);
-            var c = new Contact(address, name, dictionary.ToArray());
-            var actual = string.Format(
-                "{0}{1}{2}{3}{4}{5}", 
-                string.IsNullOrWhiteSpace(name) ? string.Empty : name + " ", 
-                quoted ? "<" : string.Empty, 
-                address, 
-                string.IsNullOrWhiteSpace(parameters) ? string.Empty : ";" + parameters, 
-                string.IsNullOrWhiteSpace(tag) ? string.Empty : ";tag=" + tag, 
-                quoted ? ">" : string.Empty);
-            Assert.Inconclusive("Contact not being tested");
-            Assert.AreEqual(expected, actual);
+            var trailing = trailingParameters.Split(';').Where(a => a.Length > 0).ToDictionary(a => a.Split('=')[0], a => a.Split('=')[1]);
+
+            var c = new Contact(address, name, dictionary.ToArray(), trailing.ToArray());
+            Assert.AreEqual(expected, c.ToString(quoted));
+        }
+        [TestCase("<sip:237@10.0.8.61:5060;user=phone>;tag=7831-C733", true)]
+        [TestCase("sip:237@10.0.8.61:5060;user=phone", false)]
+        [TestCase("sip:237@10.0.8.61:5060;user=phone;tag=7831-C733", false)]
+        public void TestContactParse(string expected, bool quoted)
+        {
+            Contact c = expected;
+            Assert.AreEqual(expected, c.ToString(quoted));
         }
     }
 }

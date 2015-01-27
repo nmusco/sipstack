@@ -14,14 +14,17 @@ namespace SipStack
         private readonly string address;
 
         private readonly List<KeyValuePair<string, string>> parameters;
+        private readonly List<KeyValuePair<string, string>> trailing;
 
-        public Contact(string address, string name = null, params KeyValuePair<string, string>[] parameters)
+        public Contact(string address, string name = null, KeyValuePair<string, string>[] parameters = null, KeyValuePair<string, string>[] trailingParameters = null)
         {
             this.protocol = null;
             this.name = name;
             this.address = address;
 
-            this.parameters = new List<KeyValuePair<string, string>>(parameters.Length > 0 ? new List<KeyValuePair<string, string>>(parameters) : Enumerable.Empty<KeyValuePair<string, string>>());
+            this.parameters = new List<KeyValuePair<string, string>>(parameters != null && parameters.Length > 0 ? new List<KeyValuePair<string, string>>(parameters) : Enumerable.Empty<KeyValuePair<string, string>>());
+            this.trailing = new List<KeyValuePair<string, string>>(trailingParameters != null && trailingParameters.Length > 0 ? new List<KeyValuePair<string, string>>(trailingParameters) : Enumerable.Empty<KeyValuePair<string, string>>());
+
             if (this.address.Contains(':'))
             {
                 var idx = this.address.IndexOf(':');
@@ -36,6 +39,7 @@ namespace SipStack
                     this.address = this.address.Substring(idx + 1);
                 }
             }
+
         }
 
         public string Name
@@ -88,6 +92,7 @@ namespace SipStack
             }
 
             var parameters = new List<KeyValuePair<string, string>>();
+            var trailing = new List<KeyValuePair<string, string>>();
 
             if (isQuoted)
             {
@@ -96,6 +101,13 @@ namespace SipStack
             
             if (input.IndexOf('<') > -1 && input.IndexOf('>') > -1)
             {
+                var trailingContent = input.Substring(input.IndexOf('>'));
+                var kvp = from x in trailingContent.Split(';')
+                          let split = x.Split('=')
+                          where split.Length == 2
+                          select new KeyValuePair<string, string>(split[0], split[1]);
+                trailing = kvp.ToList();
+
                 input = input.Substring(input.IndexOf('<') + 1, input.LastIndexOf('>') - 1);
             }
 
@@ -117,7 +129,7 @@ namespace SipStack
                 parameters = kvp.ToList();
             }
 
-            return new Contact(address, name, parameters.ToArray());
+            return new Contact(address, name, parameters.ToArray(), trailing.ToArray());
         }
 
         public override bool Equals(object obj)
@@ -160,7 +172,11 @@ namespace SipStack
             {
                 sb.Append(">");
             }
-
+            if (this.trailing.Count > 0)
+            {
+                sb.Append(";");
+                sb.Append(string.Join(";", this.trailing.Select(a => string.Format("{0}={1}", a.Key, a.Value))));
+            }
             return sb.ToString();
         }
 
