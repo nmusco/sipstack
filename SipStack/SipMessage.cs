@@ -101,7 +101,7 @@ namespace SipStack
                     }
                     throw new InvalidOperationException("response code not understood: " + str);
                 default:
-                    return Parse(buffer);
+                    throw new NotImplementedException();
             }
         }
 

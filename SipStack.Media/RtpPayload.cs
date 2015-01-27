@@ -31,8 +31,9 @@ namespace SipStack.Media
         {
             int idx = 1;
 
-            this.isFirst = data[idx++] == (0x80 | 0x08);
+            this.isFirst = data[idx++] == (0x80 | 0x08); // 0x08 is the codec identifier
 
+            // RtpEvent is not supported yet
             var shortData = new[] { data[idx++], data[idx++] }.ToArray();
             this.sequenceNumber = (short)(shortData[1] | shortData[0] << 8);
 

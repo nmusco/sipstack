@@ -21,9 +21,9 @@ namespace SipStack
 
         private readonly UdpClient connection;
 
-        private int callSequence = 1;
+        private int callSequence = (int)(DateTime.Now.Ticks % 1000);
 
-        private MediaCodec mediaCodec;
+        private RtpStream rtp;
 
         private Dialog(string callId, IPEndPoint remoteHost)
         {
@@ -32,7 +32,42 @@ namespace SipStack
             this.connection = new UdpClient(5060);
             this.messageHandlers["INVITE"] = this.HandleInviteSend;
             this.messageHandlers["100"] = this.Handle100Trying;
+            this.messageHandlers["180"] = this.Handle100Trying;
             this.messageHandlers["183"] = this.Handle183;
+            this.messageHandlers["500"] = this.HandleError;
+            this.messageHandlers["PRACK"] = null;
+            this.messageHandlers["480"] = this.HandleTimeout;
+        }
+
+        private void HandleTimeout(SipMessage arg1, SipMessage arg2)
+        {
+            var ack = new SipMessage("ACK");
+            ack.CopyHeadersFrom(arg2);
+            this.Send(ack);
+        }
+
+        private void HandleError(SipMessage last, SipMessage next)
+        {
+            var n = next as SipResponse;
+            var msg = new SipMessage("ACK") { };
+
+            var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
+            foreach (var c in headersToCopy)
+            {
+                msg.Headers[c] = last.Headers[c];
+            }
+
+            if (n == null)
+            {
+                this.Send(msg);
+            }
+
+            if (n.StatusCode == 500)
+            {
+                this.Send(msg);
+
+                return;
+            }
         }
 
         private void HandleInviteSend(SipMessage last, SipMessage current)
@@ -59,49 +94,89 @@ namespace SipStack
         private void Handle100Trying(SipMessage last, SipMessage current)
         {
             // do nothing, wait for 183
-            var range = new[] { 1000, 2000, 5000 };
+            var range = new[] { 1000, 2000, 5000, 10000, 30000 };
 
             // does not send message, only waits for provisional message
             var next = this.WaitAndResend(null, range) as SipResponse;
 
             if (next == null)
             {
-                throw new TimeoutException("dead while wait for 183");
+                throw new TimeoutException("dead while wait for 18x");
             }
 
-            if (next.StatusCode != 183)
+            if (next.StatusCode == 180)
             {
-                throw new InvalidOperationException(string.Format("Cant handle {0} in this state {1}", next.StatusCode, "100"));
+                this.PostMessage(last, next);
+                return;
             }
 
-            this.PostMessage(last, next);
+            if (next.StatusCode == 183)
+            {
+                this.PostMessage(last, next);
+            }
         }
 
         private void Handle183(SipMessage last, SipMessage current)
         {
-            var msg = new SipMessage("PRACK");
+            Console.WriteLine("handling 183 message");
+            //var msg = new SipMessage("200");
 
-            var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
-            foreach (var c in headersToCopy)
+            //var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "To", "Via", "Session-ID" };
+            //foreach (var c in headersToCopy)
+            //{
+            //    msg.Headers[c] = current.Headers[c];
+            //}
+
+            //msg.Headers["Max-Forwards"] = "70";
+            //msg.Headers["Content-Length"] = "0";
+            //msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " PRACK";
+            //msg.Headers["RAck"] = string.Format("{0} {1}", current.Headers["RSeq"], current.Headers["CSeq"]);
+            //msg.Headers["Allow"] = "INVITE,BYE,REGISTER,ACK,OPTIONS,CANCEL,INFO,SUBSCRIBE,NOTIFY,REFER,UPDATE";
+
+            if (current.SdpData != null)
             {
-                msg.Headers[c] = last.Headers[c];
+                this.SetSdpInformation(current.SdpData);
             }
 
-            msg.Headers["Max-Forwards"] = "70";
-            msg.Headers["Content-Length"] = "0";
-            msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " PRACK";
-            msg.Headers["RAck"] = string.Format("{0} {1}", current.Headers["RSeq"], current.Headers["CSeq"]);
+            var msg = this.WaitAndResend(null, new[] { 4800, 750, 1000, 2000, 5000, 5000 });
+            if (msg == null)
+            {
+                // could not get 200 OK from response
+                return;
+            }
 
-            //this.media.SetRemoteEndpoint();
+            var resp = msg as SipResponse;
 
-            var ipAddress = current.SdpData.Parameters.FirstOrDefault(a => a.Key == "c").Value.Split(' ').Last();
+            if ((resp != null && resp.StatusCode == 200) || msg.Method == "BYE")
+            {
+                Console.WriteLine("I received a 200 or BYE");
+                var ack = new SipMessage("ACK");
+                ack.Headers["Allow"] = "INVITE,BYE,REGISTER,ACK,OPTIONS,CANCEL,INFO,SUBSCRIBE,NOTIFY,REFER,UPDATE";
+                ack.Headers["Call-ID"] = current.Headers["Call-ID"];
+                ack.Headers["Contact"] = last.Headers["Contact"];
+                ack.Headers["CSeq"] = this.callSequence + " ACK";
+                ack.Headers["From"] = last.Headers["From"];
+                ack.Headers["Max-Forwards"] = "70";
+                ack.Headers["Session-ID"] = current.Headers["Session-ID"];
+                ack.Headers["To"] = current.Headers["To"];
+                ack.Headers["Via"] = current.Headers["Via"];
+                ack.Headers["Content-Length"] = "0";
+                Thread.Sleep(10);
+                this.Send(ack);
+            }
+        }
+
+        private void SetSdpInformation(Sdp sdp)
+        {
+            var ipAddress = sdp.Parameters.FirstOrDefault(a => a.Key == "c").Value.Split(' ').Last();
 
             var remotePort =
-                current.SdpData.Parameters.FirstOrDefault(a => a.Key == "m" && a.Value.StartsWith("audio")).Value.Split(' ').Skip(1).First();
+                sdp.Parameters.FirstOrDefault(a => a.Key == "m" && a.Value.StartsWith("audio"))
+                    .Value.Split(' ')
+                    .Skip(1)
+                    .First();
 
-            this.mediaCodec.SetRemoteEndpoint(new IPEndPoint(IPAddress.Parse(ipAddress), int.Parse(remotePort)));
-
-            this.Send(msg);
+            this.rtp.SetRemoteEndpoint(new IPEndPoint(IPAddress.Parse(ipAddress), int.Parse(remotePort)));
         }
 
         private SipMessage WaitAndResend(SipMessage currentMessage, IEnumerable<int> timers)
@@ -127,8 +202,8 @@ namespace SipStack
         private void Send(SipMessage msg)
         {
             var dgram = msg.Serialize();
-            Console.WriteLine(Encoding.Default.GetString(dgram));
             this.connection.Send(dgram, dgram.Length, this.remoteHost);
+            Console.WriteLine(Encoding.Default.GetString(dgram));
         }
 
         private void PostMessage(SipMessage lastMessage, SipMessage current)
@@ -148,15 +223,17 @@ namespace SipStack
         {
             var dlg = new Dialog(Guid.NewGuid() + "@" + sipAddress, remoteHost);
             var invite = new InviteMessage(dlg.CallId, to, @from, @from);
+            var localEp = new IPEndPoint(IPAddress.Parse(rtpAddress ?? sipAddress), MediaGateway.GetNextPort());
 
-            dlg.mediaCodec = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw, rtpAddress ?? sipAddress);
+            dlg.rtp = new RtpStream(localEp, MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw));
+
 
             invite.SdpData = new Sdp();
-            invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), dlg.mediaCodec.LocalEndpoint.Address))
+            invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), localEp.Address))
                 .AddParameter("s", "-")
                 .AddParameter("c", "IN IP4 " + sipAddress)
                 .AddParameter("t", "0 0")
-                .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", dlg.mediaCodec.LocalEndpoint.Port))
+                .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", localEp.Port))
                 .AddParameter("a", "rtpmap:8 PCMA/8000")
                 .AddParameter("a", "rtpmap:101 telephone-event/8000")
                 .AddParameter("a", "fmtp:101 0-15")
@@ -210,6 +287,28 @@ namespace SipStack
             Console.WriteLine(Encoding.Default.GetString(data));
             msg = SipMessage.Parse(data);
             return true;
+        }
+    }
+
+    public static class SipMessageExtensions
+    {
+        public static void CopyHeadersFrom(this SipMessage msg, SipMessage @from, params string[] headers)
+        {
+            if (headers == null)
+            {
+                foreach (var h in @from.Headers)
+                {
+                    msg.Headers[h] = @from.Headers[h];
+                }
+            }
+            else
+            {
+                var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
+                foreach (var c in headersToCopy)
+                {
+                    msg.Headers[c] = @from.Headers[c];
+                }
+            }
         }
     }
 }

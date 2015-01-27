@@ -9,33 +9,42 @@ namespace SipStack
 
     public class MediaGateway
     {
-        private const int InitialPort = 10115;
+        private static readonly int initialPort;
 
-        private static readonly IDictionary<AudioCodec, Func<IPEndPoint, MediaCodec>> CodecFactory = new Dictionary<AudioCodec, Func<IPEndPoint, MediaCodec>>();
+        private static readonly IDictionary<AudioCodec, Func<IMediaCodec>> CodecFactory = new Dictionary<AudioCodec, Func<IMediaCodec>>();
 
-        private static int currentPort = InitialPort;
+        private static int currentPort = initialPort;
 
         public enum AudioCodec
         {
             G711Alaw
         }
 
-        public static MediaCodec CreateMedia(AudioCodec codec, string localAddress)
+        static MediaGateway()
+        {
+            initialPort = (int)(10000 + (DateTime.Now.Ticks * 999));
+        }
+
+        public static int GetNextPort()
+        {
+            var nextPort = Interlocked.Increment(ref currentPort);
+            Interlocked.CompareExchange(ref currentPort, initialPort, initialPort);
+            return nextPort;
+        }
+
+        public static IMediaCodec CreateMedia(AudioCodec codec)
         {
             if (!CodecFactory.ContainsKey(codec))
             {
                 throw new ArgumentOutOfRangeException("codec", string.Format("Factory for codec {0} not found", codec));
             }
 
-            var nextPort = Interlocked.Increment(ref currentPort);
-            Interlocked.CompareExchange(ref currentPort, InitialPort, InitialPort);
+            Interlocked.CompareExchange(ref currentPort, initialPort, initialPort);
 
-            var localEp = new IPEndPoint(IPAddress.Parse(localAddress), nextPort);
-
-            return CodecFactory[codec](localEp);
+            return CodecFactory[codec]();
         }
 
-        public static void RegisterCodec(AudioCodec codec, Func<IPEndPoint, MediaCodec> factory)
+        public static void RegisterCodec(AudioCodec codec, Func<IMediaCodec> factory)
         {
             CodecFactory[codec] = factory;
         }
