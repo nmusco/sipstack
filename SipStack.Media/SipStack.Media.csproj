@@ -20,6 +20,7 @@
     <DefineConstants>TRACE;DEBUG;WIN64</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -52,7 +53,7 @@
       <Link>fmod_memoryinfo.cs</Link>
     </Compile>
     <Compile Include="FmodSoundsystem.cs" />
-    <Compile Include="MediaCodec.cs" />
+    <Compile Include="IMediaCodec.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RtpPayload.cs" />
