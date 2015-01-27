@@ -160,6 +160,5 @@
                 throw new InvalidOperationException(string.Format(msgformat, result));
             }
         }
-
     }
 }
