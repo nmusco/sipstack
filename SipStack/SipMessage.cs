@@ -231,9 +231,13 @@ namespace SipStack
                     this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture);
                 }
 
-
                 foreach (DictionaryEntry kvp in this.Headers)
                 {
+                    if (kvp.Value == null)
+                    {
+                        continue;
+                    }
+
                     sb.WriteLine("{0}: {1}", kvp.Key, kvp.Value);
                 }
 

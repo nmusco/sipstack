@@ -96,16 +96,9 @@ namespace SipStack
             var n = next as SipResponse;
             var msg = new AckMessage(last.CallId, last.From, last.To, last.MaxForwards, last.Supported, last.Via);
 
-            if (n == null)
+            if (n == null || n.StatusCode == 500)
             {
                 this.Send(msg);
-            }
-
-            if (n.StatusCode == 500)
-            {
-                this.Send(msg);
-
-                return;
             }
         }
 
