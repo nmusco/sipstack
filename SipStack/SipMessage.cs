@@ -15,6 +15,13 @@ namespace SipStack
     {
         private const string BoundaryId = "unique-boundary-1";
 
+        public SipMessage(string method)
+            : this()
+        {
+            this.Method = method;
+            this.Headers["Allow"] = "INVITE, ACK, PRACK, CANCEL, BYE, OPTIONS, MESSAGE, NOTIFY, UPDATE, REGISTER, INFO, REFER, SUBSCRIBE, PUBLISH";
+        }
+
         protected SipMessage()
         {
             this.Headers = new OrderedDictionary();
@@ -24,13 +31,6 @@ namespace SipStack
             : this(method)
         {
             this.Headers["To"] = to;
-        }
-
-        public SipMessage(string method)
-            : this()
-        {
-            this.Method = method;
-            this.Headers["Allow"] = "INVITE, ACK, PRACK, CANCEL, BYE, OPTIONS, MESSAGE, NOTIFY, UPDATE, REGISTER, INFO, REFER, SUBSCRIBE, PUBLISH";
         }
 
         public Contact To
@@ -63,6 +63,11 @@ namespace SipStack
 
                 return (Contact)h;
             }
+
+            set
+            {
+                this.Headers["From"] = value;
+            }
         }
 
         public Contact Contact
@@ -77,9 +82,71 @@ namespace SipStack
 
                 return (Contact)h;
             }
+            set
+            {
+                this.Headers["Contact"] = value;
+            }
         }
 
         public string Method { get; protected set; }
+
+        public string Via
+        {
+            get
+            {
+                return this.Headers["Via"] as string;
+            }
+
+            set
+            {
+                this.Headers["Via"] = value;
+            }
+        }
+
+        public string CallId 
+        {
+            get
+            {
+                return this.Headers["Call-ID"] as string;
+            }
+
+            set
+            {
+                this.Headers["Call-ID"] = value;
+            }
+        }
+
+        public int MaxForwards 
+        {
+            get
+            {
+                int ret;
+                if (!this.Headers.Contains("Max-Forwards"))
+                {
+                    return 70;
+                }
+
+                return int.TryParse(this.Headers["Max-Forwards"].ToString(), out ret) ? ret : 70;
+            }
+
+            set
+            {
+                this.Headers["Max-Forwards"] = value;
+            }
+        }
+
+        public string Supported 
+        {
+            get
+            {
+                return this.Headers["Supported"] as string;
+            }
+
+            set
+            {
+                this.Headers["Supported"] = value;
+            }
+        }
 
         public OrderedDictionary Headers { get; private set; }
 
@@ -99,6 +166,7 @@ namespace SipStack
                     {
                         return new SipResponse(buffer);
                     }
+
                     throw new InvalidOperationException("response code not understood: " + str);
                 default:
                     throw new NotImplementedException();

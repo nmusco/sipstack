@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AckMessage.cs" />
     <Compile Include="AlawMediaCodec.cs" />
     <Compile Include="NAudioPlaybackDevice.cs" />
     <Compile Include="Body.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="RtpEvent.cs" />
     <Compile Include="Sdp.cs" />
     <Compile Include="SipMessage.cs" />
+    <Compile Include="SipMessageExtensions.cs" />
     <Compile Include="SipResponse.cs" />
   </ItemGroup>
   <ItemGroup>

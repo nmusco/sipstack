@@ -35,27 +35,66 @@ namespace SipStack
             this.messageHandlers["180"] = this.Handle100Trying;
             this.messageHandlers["183"] = this.Handle183;
             this.messageHandlers["500"] = this.HandleError;
-            this.messageHandlers["PRACK"] = null;
-            this.messageHandlers["480"] = this.HandleTimeout;
+            this.messageHandlers["PRACK"] = null;    
         }
 
-        private void HandleTimeout(SipMessage arg1, SipMessage arg2)
+        public string CallId { get; set; }
+
+        public static Dialog InitSipCall(IPEndPoint remoteHost, Contact to, Contact from, Contact callerContact, string sipAddress, string rtpAddress = null)
         {
-            var ack = new SipMessage("ACK");
-            ack.CopyHeadersFrom(arg2);
-            this.Send(ack);
+            var dlg = new Dialog(Guid.NewGuid() + "@" + sipAddress, remoteHost);
+            var invite = new InviteMessage(dlg.CallId, to, @from, @from);
+            var localEp = new IPEndPoint(IPAddress.Parse(rtpAddress ?? sipAddress), MediaGateway.GetNextPort());
+
+            dlg.rtp = new RtpStream(localEp, MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw));
+
+            invite.SdpData = new Sdp();
+            invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), localEp.Address))
+                .AddParameter("s", "-")
+                .AddParameter("c", string.Format("IN IP4 {0}", sipAddress))
+                .AddParameter("t", "0 0")
+                .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", localEp.Port))
+                .AddParameter("a", "rtpmap:8 PCMA/8000")
+                .AddParameter("a", "rtpmap:101 telephone-event/8000")
+                .AddParameter("a", "fmtp:101 0-15")
+                .AddParameter("a", "sendrecv");
+
+            var isup = new IsupInitialAddress();
+            invite.IsupData = isup;
+            isup.NatureOfConnectionIndicator.EchoControlIncluded = false;
+            isup.NatureOfConnectionIndicator.SatelliteIndicator = NatureOfConnection.SatelliteIndicatorFlags.One;
+            isup.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
+            isup.CallingPartyCategory.LoadParameterData(new byte[] { 0xe0 });
+
+            isup.CalledNumber.Number = new string(invite.To.Address.TakeWhile(a => a != '@').ToArray());
+
+            isup.CalledNumber.NumberingFlags = NAIFlags.RoutingNotAllowed | NAIFlags.Isdn;
+            isup.CalledNumber.Flags = PhoneFlags.NAINationalNumber;
+
+            var callingNumber = invite.IsupData.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = invite.From.Address.Split('@').FirstOrDefault() });
+
+            callingNumber.NumberingFlags |= NAIFlags.ScreeningVerifiedAndPassed | NAIFlags.NetworProvided;
+
+            if (callerContact != null)
+            {
+                isup.AddOptionalParameter(IsupParameter.OriginalCalledNumber(callerContact, callingNumber.Flags));
+
+                isup.AddOptionalParameter(IsupParameter.RedirectingNumber(callerContact, callingNumber.Flags));
+
+                isup.AddRedirInfo();
+            }
+
+            invite.Headers["Via"] = string.Format("SIP/2.0/UDP {0}:5060;rport;branch=z9hG4bK7fe{1}", sipAddress, DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
+
+            dlg.PostMessage(null, invite);
+
+            return dlg;
         }
 
         private void HandleError(SipMessage last, SipMessage next)
         {
             var n = next as SipResponse;
-            var msg = new SipMessage("ACK") { };
-
-            var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
-            foreach (var c in headersToCopy)
-            {
-                msg.Headers[c] = last.Headers[c];
-            }
+            var msg = new AckMessage(last.CallId, last.From, last.To, last.MaxForwards, last.Supported, last.Via);
 
             if (n == null)
             {
@@ -119,20 +158,7 @@ namespace SipStack
         private void Handle183(SipMessage last, SipMessage current)
         {
             Console.WriteLine("handling 183 message");
-            //var msg = new SipMessage("200");
-
-            //var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "To", "Via", "Session-ID" };
-            //foreach (var c in headersToCopy)
-            //{
-            //    msg.Headers[c] = current.Headers[c];
-            //}
-
-            //msg.Headers["Max-Forwards"] = "70";
-            //msg.Headers["Content-Length"] = "0";
-            //msg.Headers["CSeq"] = Interlocked.Increment(ref this.callSequence) + " PRACK";
-            //msg.Headers["RAck"] = string.Format("{0} {1}", current.Headers["RSeq"], current.Headers["CSeq"]);
-            //msg.Headers["Allow"] = "INVITE,BYE,REGISTER,ACK,OPTIONS,CANCEL,INFO,SUBSCRIBE,NOTIFY,REFER,UPDATE";
-
+            
             if (current.SdpData != null)
             {
                 this.SetSdpInformation(current.SdpData);
@@ -149,26 +175,25 @@ namespace SipStack
 
             if ((resp != null && resp.StatusCode == 200) || msg.Method == "BYE")
             {
-                Console.WriteLine("I received a 200 or BYE");
-                var ack = new SipMessage("ACK");
+                var ack = new AckMessage(current.CallId, last.From, current.To, 70, null, current.Via);
                 ack.Headers["Allow"] = "INVITE,BYE,REGISTER,ACK,OPTIONS,CANCEL,INFO,SUBSCRIBE,NOTIFY,REFER,UPDATE";
-                ack.Headers["Call-ID"] = current.Headers["Call-ID"];
-                ack.Headers["Contact"] = last.Headers["Contact"];
+
+                ack.Contact = last.Contact;
+                
                 ack.Headers["CSeq"] = this.callSequence + " ACK";
                 ack.Headers["From"] = last.Headers["From"];
-                ack.Headers["Max-Forwards"] = "70";
+                
                 ack.Headers["Session-ID"] = current.Headers["Session-ID"];
-                ack.Headers["To"] = current.Headers["To"];
-                ack.Headers["Via"] = current.Headers["Via"];
+
                 ack.Headers["Content-Length"] = "0";
-                Thread.Sleep(10);
+
                 this.Send(ack);
             }
         }
 
         private void SetSdpInformation(Sdp sdp)
         {
-            var ipAddress = sdp.Parameters.FirstOrDefault(a => a.Key == "c").Value.Split(' ').Last();
+            var address = sdp.Parameters.FirstOrDefault(a => a.Key == "c").Value.Split(' ').Last();
 
             var remotePort =
                 sdp.Parameters.FirstOrDefault(a => a.Key == "m" && a.Value.StartsWith("audio"))
@@ -176,7 +201,7 @@ namespace SipStack
                     .Skip(1)
                     .First();
 
-            this.rtp.SetRemoteEndpoint(new IPEndPoint(IPAddress.Parse(ipAddress), int.Parse(remotePort)));
+            this.rtp.SetRemoteEndpoint(new IPEndPoint(IPAddress.Parse(address), int.Parse(remotePort)));
         }
 
         private SipMessage WaitAndResend(SipMessage currentMessage, IEnumerable<int> timers)
@@ -217,59 +242,6 @@ namespace SipStack
             this.messageHandlers[method](lastMessage, current);
         }
 
-        public string CallId { get; set; }
-
-        public static Dialog InitSipCall(IPEndPoint remoteHost, Contact to, Contact @from, Contact callerContact, string sipAddress, string rtpAddress = null)
-        {
-            var dlg = new Dialog(Guid.NewGuid() + "@" + sipAddress, remoteHost);
-            var invite = new InviteMessage(dlg.CallId, to, @from, @from);
-            var localEp = new IPEndPoint(IPAddress.Parse(rtpAddress ?? sipAddress), MediaGateway.GetNextPort());
-
-            dlg.rtp = new RtpStream(localEp, MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw));
-
-
-            invite.SdpData = new Sdp();
-            invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", Interlocked.Increment(ref sdpIds), localEp.Address))
-                .AddParameter("s", "-")
-                .AddParameter("c", "IN IP4 " + sipAddress)
-                .AddParameter("t", "0 0")
-                .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", localEp.Port))
-                .AddParameter("a", "rtpmap:8 PCMA/8000")
-                .AddParameter("a", "rtpmap:101 telephone-event/8000")
-                .AddParameter("a", "fmtp:101 0-15")
-                .AddParameter("a", "sendrecv");
-
-            var isup = new IsupInitialAddress();
-            invite.IsupData = isup;
-            isup.NatureOfConnectionIndicator.EchoControlIncluded = false;
-            isup.NatureOfConnectionIndicator.SatelliteIndicator = NatureOfConnection.SatelliteIndicatorFlags.One;
-            isup.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
-            isup.CallingPartyCategory.LoadParameterData(new byte[] { 0xe0 });
-
-            isup.CalledNumber.Number = new string(invite.To.Address.TakeWhile(a => a != '@').ToArray());
-
-            isup.CalledNumber.NumberingFlags = NAIFlags.RoutingNotAllowed | NAIFlags.Isdn;
-            isup.CalledNumber.Flags = PhoneFlags.NAINationalNumber;
-
-            var callingNumber = invite.IsupData.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = invite.From.Address.Split('@').FirstOrDefault() });
-
-            callingNumber.NumberingFlags |= NAIFlags.ScreeningVerifiedAndPassed | NAIFlags.NetworProvided;
-
-            if (callerContact != null)
-            {
-                isup.AddOptionalParameter(IsupParameter.OriginalCalledNumber(callerContact, callingNumber.Flags));
-
-                isup.AddOptionalParameter(IsupParameter.RedirectingNumber(callerContact, callingNumber.Flags));
-
-                isup.AddRedirInfo();
-            }
-
-            invite.Headers["Via"] = string.Format("SIP/2.0/UDP {0}:5060;rport;branch=z9hG4bK7fe{1}", sipAddress, DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
-
-            dlg.PostMessage(null, invite);
-            return dlg;
-        }
-
         private bool TryGetNextMessage(int timeout, out SipMessage msg)
         {
             var resp = this.connection.ReceiveAsync();
@@ -287,28 +259,6 @@ namespace SipStack
             Console.WriteLine(Encoding.Default.GetString(data));
             msg = SipMessage.Parse(data);
             return true;
-        }
-    }
-
-    public static class SipMessageExtensions
-    {
-        public static void CopyHeadersFrom(this SipMessage msg, SipMessage @from, params string[] headers)
-        {
-            if (headers == null)
-            {
-                foreach (var h in @from.Headers)
-                {
-                    msg.Headers[h] = @from.Headers[h];
-                }
-            }
-            else
-            {
-                var headersToCopy = new[] { "Call-ID", "From", "Max-Forwards", "Supported", "To", "Via" };
-                foreach (var c in headersToCopy)
-                {
-                    msg.Headers[c] = @from.Headers[c];
-                }
-            }
         }
     }
 }
