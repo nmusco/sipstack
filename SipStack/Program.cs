@@ -25,8 +25,8 @@
                               RemoteEndpoint = remoteHost,
                               LocalEndpoint = new IPEndPoint(IPAddress.Parse("10.0.5.36"), 5060)
                           };
-            var dialog = Dialog.InitSipCall(dlg, stateHandler);
 
+            var dialog = Dialog.InitSipCall(dlg, stateHandler);
 
             do
             {
@@ -93,6 +93,7 @@
                     default:
                         continue;
                 }
+
                 recordingDevice.PlayDtmf(d, 320);
                 Thread.Sleep(320);
             }

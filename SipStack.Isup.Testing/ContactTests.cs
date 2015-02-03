@@ -121,6 +121,7 @@ namespace SipStack.Tests
             var c = new Contact(address, name, dictionary.ToArray(), trailing.ToArray());
             Assert.AreEqual(expected, c.ToString(quoted));
         }
+
         [TestCase("<sip:237@10.0.8.61:5060;user=phone>;tag=7831-C733", true)]
         [TestCase("sip:237@10.0.8.61:5060;user=phone", false)]
         [TestCase("sip:237@10.0.8.61:5060;user=phone;tag=7831-C733", false)]

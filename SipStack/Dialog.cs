@@ -5,11 +5,9 @@ namespace SipStack
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
-    using SipStack.Isup;
     using SipStack.Media;
 
     public enum DialogState
@@ -20,49 +18,6 @@ namespace SipStack
         Answered,
         Hanging,
         Hungup
-    }
-
-    public class DialogInfo
-    {
-        public Contact From { get; set; }
-
-        public Contact To { get; set; }
-
-        public Contact OriginalCalledNumber { get; set; }
-
-        public IPEndPoint RemoteEndpoint { get; set; }
-
-        public IPEndPoint LocalEndpoint { get; set; }
-
-        public IPEndPoint LocalRtpEndpoint { get; set; }
-
-        public void Fill(InviteMessage invite)
-        {
-            var isup = new IsupInitialAddress();
-            invite.IsupData = isup;
-            isup.NatureOfConnectionIndicator.EchoControlIncluded = false;
-            isup.NatureOfConnectionIndicator.SatelliteIndicator = NatureOfConnection.SatelliteIndicatorFlags.One;
-            isup.ForwardCallIndicator.LoadParameterData(new byte[] { 0x20, 0x01 });
-            isup.CallingPartyCategory.LoadParameterData(new byte[] { 0xe0 });
-
-            isup.CalledNumber.Number = new string(invite.To.Address.TakeWhile(a => a != '@').ToArray());
-
-            isup.CalledNumber.NumberingFlags = NAIFlags.RoutingNotAllowed | NAIFlags.Isdn;
-            isup.CalledNumber.Flags = PhoneFlags.NAINationalNumber;
-
-            var callingNumber = invite.IsupData.AddOptionalParameter(new IsupPhoneNumberParameter(IsupParameterType.CallingPartyNumber) { Number = invite.From.Address.Split('@').FirstOrDefault() });
-
-            callingNumber.NumberingFlags |= NAIFlags.ScreeningVerifiedAndPassed | NAIFlags.NetworProvided;
-
-            if (this.OriginalCalledNumber != null)
-            {
-                isup.AddOptionalParameter(IsupParameter.OriginalCalledNumber(this.OriginalCalledNumber, callingNumber.Flags));
-
-                isup.AddOptionalParameter(IsupParameter.RedirectingNumber(this.OriginalCalledNumber, callingNumber.Flags));
-
-                isup.AddRedirInfo();
-            }
-        }
     }
 
     public class Dialog
@@ -125,7 +80,6 @@ namespace SipStack
 
             invite.SdpData.AddParameter("a", "sendrecv");
 
-
             invite.Headers["Via"] = string.Format("SIP/2.0/UDP {0}:{2};rport;branch=z9hG4bK7fe{1}", dialogInfo.LocalEndpoint.Address, DateTime.Now.Ticks.ToString("X8").ToLowerInvariant(), dlg.sipPort);
             invite.Headers["CSeq"] = Interlocked.Increment(ref dlg.callSequence) + " INVITE";
 
@@ -157,17 +111,6 @@ namespace SipStack
             }
         }
 
-        private void HandleError(SipMessage last, SipMessage next)
-        {
-            var n = next as SipResponse;
-            var msg = new AckMessage(last.CallId, last.From, last.To, last.MaxForwards, last.Supported, last.Via);
-
-            if (n == null || n.StatusCode == 500)
-            {
-                this.Send(msg);
-            }
-        }
-
         private void Handle100Trying(SipMessage last, SipMessage current)
         {
             if (current == null)
@@ -193,7 +136,6 @@ namespace SipStack
             }
 
             this.stateChanged(this, DialogState.PreAck);
-
 
             var msg = this.WaitAndResend(null, new[] { 4800, 750, 1000, 2000, 5000, 5000 });
             if (msg == null)
@@ -254,6 +196,7 @@ namespace SipStack
                 else
                 {
                     this.stateChanged(this, DialogState.Hanging);
+                    
                     // this is a bye request
                     msg = new OkResponse(response.To)
                     {
@@ -276,7 +219,6 @@ namespace SipStack
 
                     this.Send(msg);
                     this.stateChanged(this, DialogState.Hungup);
-
                 }
             }
         }

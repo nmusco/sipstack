@@ -51,6 +51,7 @@
     <Compile Include="AckMessage.cs" />
     <Compile Include="AlawMediaCodec.cs" />
     <Compile Include="CollectionExtensions.cs" />
+    <Compile Include="DialogInfo.cs" />
     <Compile Include="Isup\IsupInitialAddressExtensions.cs" />
     <Compile Include="MediaCodecDescriptor.cs" />
     <Compile Include="NAudioPlaybackDevice.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="Isup\RequiredIsupParameter.cs" />
     <Compile Include="MediaGateway.cs" />
     <Compile Include="NAudioRecordDevice.cs" />
+    <Compile Include="OkResponse.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RtpEvent.cs" />

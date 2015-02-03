@@ -176,6 +176,37 @@ namespace SipStack
             }
         }
 
+        public virtual byte[] Serialize()
+        {
+            using (var ms = new MemoryStream())
+            {
+                var sb = new StreamWriter(ms, Encoding.Default);
+                this.SerializeRequestLine(sb);
+                int bodyLen;
+                var bodyText = this.SerializeBodies(out bodyLen);
+
+                if (bodyLen > 0)
+                {
+                    // content length does not counts on last 2 digits
+                    this.Headers["Content-Length"] = (bodyLen - 2).ToString(CultureInfo.InvariantCulture);
+                }
+
+                this.SerializeHeaders(sb);
+
+                if (bodyLen > 0)
+                {
+                    sb.Write(bodyText);
+                }
+                else
+                {
+                    sb.WriteLine();
+                }
+
+                sb.Flush();
+                return ms.ToArray();
+            }
+        }
+
         protected void SerializeHeaders(TextWriter writer)
         {
             foreach (DictionaryEntry kvp in this.Headers)
@@ -245,37 +276,6 @@ namespace SipStack
             return string.Empty;
         }
 
-        public virtual byte[] Serialize()
-        {
-            using (var ms = new MemoryStream())
-            {
-                var sb = new StreamWriter(ms, Encoding.Default);
-                this.SerializeRequestLine(sb);
-                int bodyLen;
-                var bodyText = this.SerializeBodies(out bodyLen);
-
-                if (bodyLen > 0) 
-                {
-                    // content length does not counts on last 2 digits
-                    this.Headers["Content-Length"] = (bodyLen - 2).ToString(CultureInfo.InvariantCulture);
-                }
-                
-                this.SerializeHeaders(sb);
-
-                if (bodyLen > 0)
-                {
-                    sb.Write(bodyText);
-                }
-                else
-                {
-                    sb.WriteLine();
-                }
-
-                sb.Flush();
-                return ms.ToArray();
-            }
-        }
-
         protected virtual void SerializeRequestLine(TextWriter writer)
         {
             writer.WriteLine("{0} {1} SIP/2.0", this.Method, this.To.ToString(false));
@@ -332,19 +332,6 @@ namespace SipStack
             var headerName = line.Substring(0, line.IndexOf(':'));
             var headerValue = line.Substring(line.IndexOf(':') + 1).TrimStart(' ');
             this.Headers[headerName] = headerValue;
-        }
-    }
-
-    public class OkResponse : SipMessage
-    {
-        public OkResponse(Contact to)
-        {
-            this.Headers["To"] = to;
-        }
-
-        protected override void SerializeRequestLine(TextWriter writer)
-        {
-            writer.WriteLine("SIP/2.0 200 OK");
         }
     }
 }
