@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Threading;
 
     using SipStack.Media;
 
@@ -12,20 +13,32 @@
         {
             var recordingDevice = new NAudioRecordDevice();
             MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, () => new AlawMediaCodec(NAudioPlaybackDevice.Instance, recordingDevice));
-            var @from = new Contact("11992971721@10.0.5.25:5060", null, new[] { new KeyValuePair<string, string>("user", "phone") });
+            var @from = new Contact("11992971721@10.0.5.36:5060", null, new[] { new KeyValuePair<string, string>("user", "phone") });
 
             var remoteHost = new IPEndPoint(IPAddress.Parse("10.0.8.61"), 5060);
-            var dialog = Dialog.InitSipCall(remoteHost, "555@10.0.8.61:5060;user=phone", @from, null, "10.0.5.25");
+            EventHandler<DialogState> stateHandler = (sender, state) => Console.WriteLine("state is {0}", state);
+
+            var dlg = new DialogInfo
+                          {
+                              From = @from,
+                              To = "555@10.0.8.61:5060;user=phone", OriginalCalledNumber = "11988609054@10.0.8.61:5060;user=phone",
+                              RemoteEndpoint = remoteHost,
+                              LocalEndpoint = new IPEndPoint(IPAddress.Parse("10.0.5.36"), 5060)
+                          };
+            var dialog = Dialog.InitSipCall(dlg, stateHandler);
+
 
             do
             {
                 var r = Console.ReadKey();
                 if (r.Key == ConsoleKey.W)
                 {
+                    dialog.Hangup();
                     break;
 
                     // TODO: send bye
                 }
+
                 Digit d;
                 switch (r.Key)
                 {
@@ -80,11 +93,8 @@
                     default:
                         continue;
                 }
-
-                if (d != default(Digit))
-                {
-                    recordingDevice.PlayDtmf(d, 320 * 3);
-                }
+                recordingDevice.PlayDtmf(d, 320);
+                Thread.Sleep(320);
             }
             while (true);
         }

@@ -27,9 +27,9 @@ namespace SipStack.Media
             this.identifier = identifier;
         }
 
-        private RtpPayload(byte[] data)
+        public RtpPayload(byte[] data)
         {
-            int idx = 1;
+            var idx = 1;
 
             this.isFirst = data[idx++] == (0x80 | 0x08); // 0x08 is the codec identifier
 
@@ -52,11 +52,6 @@ namespace SipStack.Media
             }
         }
 
-        public static RtpPayload Parse(byte[] data)
-        {
-            return new RtpPayload(data);
-        }
-
         public byte[] ToArray()
         {
             var total = new byte[12 + this.data.Length];
@@ -75,6 +70,5 @@ namespace SipStack.Media
             Buffer.BlockCopy(this.data, 0, total, 12, this.data.Length);
             return total;
         }
-
     }
 }

@@ -35,7 +35,7 @@ namespace SipStack
             // volume = 10 = 0x0a or 0x8a
             var data =
                 new[] { (byte)this.digit, (byte)(endOfEvent ? 0x8a : 0x0a) }.Concat(
-                    BitConverter.GetBytes((short)this.packetsSent * 160).Reverse()).ToArray();
+                    BitConverter.GetBytes((short)(this.packetsSent * 160)).Reverse()).ToArray();
 
             var payload = new RtpPayload(data, this.sequenceNumber, this.identifier, timestamp, false, 0x65);
 

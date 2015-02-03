@@ -27,7 +27,7 @@
                 var endOfEvent = i == numberOfPackets - 1;
 
                 var payload = ev.GetData(0).Data;
-                var expectedData = new[] { (byte)digit, (byte)(endOfEvent ? 0x8a : 0x0a) }.Concat(BitConverter.GetBytes((i + 1) * 160).Reverse()).ToArray();
+                var expectedData = new[] { (byte)digit, (byte)(endOfEvent ? 0x8a : 0x0a) }.Concat(BitConverter.GetBytes((short)((i + 1) * 160)).Reverse()).ToArray();
                 for (var x = 0; x < payload.Length; x++)
                 {
                     Assert.AreEqual(expectedData[x], payload[x]);

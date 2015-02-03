@@ -39,7 +39,6 @@ namespace SipStack
                     this.address = this.address.Substring(idx + 1);
                 }
             }
-
         }
 
         public string Name
@@ -79,7 +78,7 @@ namespace SipStack
             }
 
             input = input.TrimStart();
-            bool isQuoted = input.StartsWith("\"");
+            var isQuoted = input.StartsWith("\"");
 
             string name = null;
             string address;
@@ -172,11 +171,13 @@ namespace SipStack
             {
                 sb.Append(">");
             }
+
             if (this.trailing.Count > 0)
             {
                 sb.Append(";");
                 sb.Append(string.Join(";", this.trailing.Select(a => string.Format("{0}={1}", a.Key, a.Value))));
             }
+            
             return sb.ToString();
         }
 

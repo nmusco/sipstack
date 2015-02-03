@@ -55,7 +55,7 @@ namespace SipStack.Media
 
             if (buffer != null && buffer.Length > 0)
             {
-                var packet = RtpPayload.Parse(buffer);
+                var packet = new RtpPayload(buffer);
                 this.receiveCallback.BeginInvoke(packet, 0, null, null);
             }
         }

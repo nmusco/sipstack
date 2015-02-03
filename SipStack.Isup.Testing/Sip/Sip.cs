@@ -7,7 +7,6 @@ namespace SipStack.Tests.Sip
     using NUnit.Framework;
 
     using SipStack.Isup;
-    using SipStack.Media;
 
     [TestFixture]
     public class Sip
@@ -20,29 +19,27 @@ namespace SipStack.Tests.Sip
         {
             MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, () => new AlawMediaCodec(null, null));
 
-            var callId = "ABC";
+            const string CallId = "ABC";
+            const string LocalIp = "127.0.0.1";
+
             Contact to = "b100@10.0.8.44:5060;user=phone";
             var @from = new Contact(
                 "11992971721@10.0.5.25:5060",
                 null,
                 new[] { new KeyValuePair<string, string>("user", "phone") });
 
-            var localIp = "127.0.0.1";
-
             Contact callerContact = "11972527144@10.0.5.25:5060";
 
-            var invite = new InviteMessage(callId, to, @from, @from);
-            IMediaCodec mediaCodec = null;
+            var invite = new InviteMessage(CallId, to, @from, @from);
 
             var port = MediaGateway.GetNextPort();
 
             if (includeSdp)
             {
-                mediaCodec = MediaGateway.CreateMedia(MediaGateway.AudioCodec.G711Alaw);
                 invite.SdpData = new Sdp();
-                invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", 10, localIp))
+                invite.SdpData.AddParameter("o", string.Format("- {0} 0 IN IP4 {1}", 10, LocalIp))
                     .AddParameter("s", "-")
-                    .AddParameter("c", "IN IP4 " + localIp)
+                    .AddParameter("c", "IN IP4 " + LocalIp)
                     .AddParameter("t", "0 0")
                     .AddParameter("m", string.Format("audio {0} RTP/AVP 8 101", port))
                     .AddParameter("a", "rtpmap:8 PCMA/8000")
@@ -89,9 +86,7 @@ namespace SipStack.Tests.Sip
 
             if (includeSdp)
             {
-                invite.Headers["Via"] = string.Format(
-                "SIP/2.0/UDP {0}:5060;branch=z9hG4bK7fe{1}", localIp,
-                DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
+                invite.Headers["Via"] = string.Format("SIP/2.0/UDP {0}:5060;branch=z9hG4bK7fe{1}", LocalIp, DateTime.Now.Ticks.ToString("X8").ToLowerInvariant());
             }
 
             var bytes = invite.Serialize();

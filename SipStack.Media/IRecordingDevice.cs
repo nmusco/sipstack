@@ -35,13 +35,12 @@
         C = 14,
 
         D = 15
-    };
-
+    }
 
     public interface IRecordingDevice
     {
         void PlayDtmf(Digit digit, int duration);
 
-        void SetSendDelegate(Action<RtpPayload> method);
+        void SetSendDelegate(Action<RtpPayload> delegateMethod);
     }
 }

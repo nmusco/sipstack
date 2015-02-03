@@ -1,43 +1,9 @@
 namespace SipStack
 {
     using System;
-    using System.IO;
     using System.Linq;
 
     using SipStack.Media;
-
-    public class DebugCodec : IMediaCodec
-    {
-        private readonly IMediaCodec baseCodec;
-
-        private readonly Stream rawStream;
-
-        private readonly Stream wavStream;
-
-        public DebugCodec(IMediaCodec baseCodec, Stream rawStream, Stream wavStream)
-        {
-            this.baseCodec = baseCodec;
-            this.rawStream = rawStream;
-            this.wavStream = wavStream;
-        }
-
-        public void OnPacketReceived(RtpPayload payload, int time)
-        {
-            this.rawStream.Write(payload.Data, 0, payload.Data.Length);
-            var allBytes = payload.Data
-                .Select(AlawMediaCodec.AlawEncoder.Alaw2Linear)
-                .Select(b => BitConverter.GetBytes(b).Reverse())
-                .SelectMany(a => a.ToArray()).ToArray();
-
-            this.wavStream.Write(allBytes, 0, allBytes.Length);
-            this.baseCodec.OnPacketReceived(payload, time);
-        }
-
-        public void SetRecordingDelegate(Action<RtpPayload> method)
-        {
-            this.baseCodec.SetRecordingDelegate(method);
-        }
-    }
 
     public class AlawMediaCodec : IMediaCodec
     {
@@ -90,10 +56,32 @@ namespace SipStack
 
             private static readonly int[] SegEnd = { 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF, 0x3FFF, 0x7FFF };
 
+            public static short Alaw2Linear(byte value)
+            {
+                value ^= 0x55;
+
+                var t = (value & QuantMask) << 4;
+                var seg = (value & SegMask) >> SegShift;
+                switch (seg)
+                {
+                    case 0:
+                        t += 8;
+                        break;
+                    case 1:
+                        t += 0x108;
+                        break;
+                    default:
+                        t += 0x108;
+                        t <<= seg - 1;
+                        break;
+                }
+
+                return (short)((value & SignBit) > 0 ? t : -t);
+            }
+
             private static byte LinearToAlaw(int pcmVal)
             {
                 int mask;
-                int seg;
 
                 if (pcmVal >= 0)
                 {
@@ -115,9 +103,7 @@ namespace SipStack
                     }
                 }
 
-
-                seg = Search(pcmVal, SegEnd, 8);
-
+                var seg = Search(pcmVal, SegEnd, 8);
 
                 /* Combine the sign, segment, and quantization bits. */
 
@@ -140,7 +126,7 @@ namespace SipStack
                 return (byte)(aval ^ mask);
             }
 
-            private static unsafe int Search(int val, int[] table, int size)
+            private static int Search(int val, int[] table, int size)
             {
                 int i;
 
@@ -153,33 +139,6 @@ namespace SipStack
                 }
 
                 return size;
-            }
-
-
-            public static short Alaw2Linear(byte value)
-            {
-                int t;
-                int seg;
-
-                value ^= 0x55;
-
-                t = (value & QuantMask) << 4;
-                seg = (value & SegMask) >> SegShift;
-                switch (seg)
-                {
-                    case 0:
-                        t += 8;
-                        break;
-                    case 1:
-                        t += 0x108;
-                        break;
-                    default:
-                        t += 0x108;
-                        t <<= seg - 1;
-                        break;
-                }
-
-                return (short)((value & SignBit) > 0 ? t : -t);
             }
         }
     }

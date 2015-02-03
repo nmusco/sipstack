@@ -22,15 +22,15 @@ namespace SipStack
             this.Headers["Allow"] = "INVITE, ACK, PRACK, CANCEL, BYE, OPTIONS, MESSAGE, NOTIFY, UPDATE, REGISTER, INFO, REFER, SUBSCRIBE, PUBLISH";
         }
 
-        protected SipMessage()
-        {
-            this.Headers = new OrderedDictionary();
-        }
-
-        protected SipMessage(Contact to, string method)
+        public SipMessage(Contact to, string method)
             : this(method)
         {
             this.Headers["To"] = to;
+        }
+
+        protected SipMessage()
+        {
+            this.Headers = new OrderedDictionary();
         }
 
         public Contact To
@@ -82,6 +82,7 @@ namespace SipStack
 
                 return (Contact)h;
             }
+
             set
             {
                 this.Headers["Contact"] = value;
@@ -169,8 +170,79 @@ namespace SipStack
 
                     throw new InvalidOperationException("response code not understood: " + str);
                 default:
-                    throw new NotImplementedException();
+                    var r = new SipMessage();
+                    r.ParseBuffer(buffer);
+                    return r;
             }
+        }
+
+        protected void SerializeHeaders(TextWriter writer)
+        {
+            foreach (DictionaryEntry kvp in this.Headers)
+            {
+                if (kvp.Value == null)
+                {
+                    continue;
+                }
+
+                writer.WriteLine("{0}: {1}", kvp.Key, kvp.Value);
+            }
+        }
+
+        protected string SerializeBodies(out int len)
+        {
+            var bodyBuilder = new StringBuilder();
+            var bodies = this.GetBodies();
+            if (bodies.Length > 0)
+            {
+                if (bodies.Length == 1)
+                {
+                    this.Headers["Content-Type"] = bodies[0].ContentType;
+                }
+                else
+                {
+                    this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
+                }
+
+                if (bodies.Length > 1)
+                {
+                    bodyBuilder.AppendLine();
+                    bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                }
+
+                foreach (var b in bodies)
+                {
+                    if (bodies.Length > 1)
+                    {
+                        bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
+                    }
+
+                    foreach (var kvp in b.Headers)
+                    {
+                        bodyBuilder.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
+                    }
+
+                    bodyBuilder.AppendLine();
+
+                    bodyBuilder.AppendLine(b.ContentText);
+                    if (bodies.Length > 1)
+                    {
+                        bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
+                    }
+                }
+
+                bodyBuilder.Length = bodyBuilder.Length - 2;
+                if (bodies.Length > 1)
+                {
+                    bodyBuilder.AppendLine("--");
+                }
+
+                len = bodyBuilder.Length;
+                return bodyBuilder.ToString();
+            }
+
+            len = 0;
+            return string.Empty;
         }
 
         public virtual byte[] Serialize()
@@ -178,72 +250,21 @@ namespace SipStack
             using (var ms = new MemoryStream())
             {
                 var sb = new StreamWriter(ms, Encoding.Default);
+                this.SerializeRequestLine(sb);
+                int bodyLen;
+                var bodyText = this.SerializeBodies(out bodyLen);
 
-                sb.WriteLine("{0} {1} SIP/2.0", this.Method, this.To.ToString(false));
-
-                var bodies = this.GetBodies();
-                var bodyBuilder = new StringBuilder();
-                if (bodies.Length > 0)
+                if (bodyLen > 0) 
                 {
-                    if (bodies.Length == 1)
-                    {
-                        this.Headers["Content-Type"] = bodies[0].ContentType;
-                    }
-                    else
-                    {
-                        this.Headers["Content-Type"] = string.Format("multipart/mixed;boundary={0}", BoundaryId);
-                    }
-
-                    if (bodies.Length > 1)
-                    {
-                        bodyBuilder.AppendLine();
-                        bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
-                    }
-
-                    foreach (var b in bodies)
-                    {
-                        if (bodies.Length > 1)
-                        {
-                            bodyBuilder.AppendLine(string.Format("Content-Type: {0}", b.ContentType));
-                        }
-
-                        foreach (var kvp in b.Headers)
-                        {
-                            bodyBuilder.AppendLine(string.Format("{0}: {1}", kvp.Key, kvp.Value));
-                        }
-
-                        bodyBuilder.AppendLine();
-
-                        bodyBuilder.AppendLine(b.ContentText);
-                        if (bodies.Length > 1)
-                        {
-                            bodyBuilder.AppendLine(string.Format("--{0}", BoundaryId));
-                        }
-                    }
-
-                    bodyBuilder.Length = bodyBuilder.Length - 2;
-                    if (bodies.Length > 1)
-                    {
-                        bodyBuilder.AppendLine("--");
-                    }
-
                     // content length does not counts on last 2 digits
-                    this.Headers["Content-Length"] = (bodyBuilder.Length - 2).ToString(CultureInfo.InvariantCulture);
+                    this.Headers["Content-Length"] = (bodyLen - 2).ToString(CultureInfo.InvariantCulture);
                 }
+                
+                this.SerializeHeaders(sb);
 
-                foreach (DictionaryEntry kvp in this.Headers)
+                if (bodyLen > 0)
                 {
-                    if (kvp.Value == null)
-                    {
-                        continue;
-                    }
-
-                    sb.WriteLine("{0}: {1}", kvp.Key, kvp.Value);
-                }
-
-                if (bodyBuilder.Length > 0)
-                {
-                    sb.Write(bodyBuilder);
+                    sb.Write(bodyText);
                 }
                 else
                 {
@@ -255,6 +276,11 @@ namespace SipStack
             }
         }
 
+        protected virtual void SerializeRequestLine(TextWriter writer)
+        {
+            writer.WriteLine("{0} {1} SIP/2.0", this.Method, this.To.ToString(false));
+        }
+        
         protected void ParseBuffer(byte[] buffer)
         {
             var bs = new ByteStream(buffer, 0);
@@ -306,6 +332,19 @@ namespace SipStack
             var headerName = line.Substring(0, line.IndexOf(':'));
             var headerValue = line.Substring(line.IndexOf(':') + 1).TrimStart(' ');
             this.Headers[headerName] = headerValue;
+        }
+    }
+
+    public class OkResponse : SipMessage
+    {
+        public OkResponse(Contact to)
+        {
+            this.Headers["To"] = to;
+        }
+
+        protected override void SerializeRequestLine(TextWriter writer)
+        {
+            writer.WriteLine("SIP/2.0 200 OK");
         }
     }
 }
