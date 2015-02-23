@@ -10,7 +10,9 @@ namespace SipStack.Isup
         Answer = 0x09,
         Release = 0x0c,
         IAM = 0x1,
-        AddressComplete = 0x6
+        AddressComplete = 0x6,
+
+        CallProgress = 0x2c
     }
 
     public enum RedirReason
@@ -49,7 +51,11 @@ namespace SipStack.Isup
 
         OptionalBackwardCall = 0x29,
 
-        CauseIndicator = 0x18
+        CauseIndicator = 0x18,
+
+        EventInformation = 0x24,
+
+        GenericNotificationIndicator = 0x2c
     }
 
     public abstract class IsupBody : Body
@@ -81,6 +87,9 @@ namespace SipStack.Isup
 
                 case IsupMessageType.AddressComplete:
                     return new IsupAddressComplete(bs);
+
+                case IsupMessageType.CallProgress:
+                    return new IsupCallProgress(bs);
             }
 
             throw new NotImplementedException();

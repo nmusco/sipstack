@@ -52,6 +52,8 @@
     <Compile Include="AlawMediaCodec.cs" />
     <Compile Include="CollectionExtensions.cs" />
     <Compile Include="DialogInfo.cs" />
+    <Compile Include="Isup\EventInformation.cs" />
+    <Compile Include="Isup\IsupCallProgress.cs" />
     <Compile Include="Isup\IsupInitialAddressExtensions.cs" />
     <Compile Include="MediaCodecDescriptor.cs" />
     <Compile Include="NAudioPlaybackDevice.cs" />
