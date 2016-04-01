@@ -90,6 +90,10 @@ namespace SipStack.Isup
 
                 case IsupMessageType.CallProgress:
                     return new IsupCallProgress(bs);
+                    case IsupMessageType.Answer:
+                    case IsupMessageType.Release:
+                    // TODO: implement ANM
+                    return null;
             }
 
             throw new NotImplementedException();

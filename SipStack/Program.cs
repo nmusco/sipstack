@@ -1,7 +1,6 @@
 ﻿namespace SipStack
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
     using System.Threading;
 
@@ -12,19 +11,24 @@
         public static void Main(string[] args)
         {
             var recordingDevice = new NAudioRecordDevice();
+
             MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, () => new AlawMediaCodec(NAudioPlaybackDevice.Instance, recordingDevice));
-            var @from = new Contact("11992971721@10.0.5.36:5060", null, new[] { new KeyValuePair<string, string>("user", "phone") });
+            DialogInfo dlg;
+            if (args.Length >= 4)
+            {
+                dlg = Configure(args[0], args[1], args[2], args[3], args.Length > 4 ? args[4] : null);
+            }
+            else if (args.Length == 0)
+            {
+                dlg = Configure();
+            }
+            else
+            {
+                Console.WriteLine("usage: sipStack.exe <source_ip> <source_number> <destination_number> <destination_ip>");
+                return;
+            }
 
-            var remoteHost = new IPEndPoint(IPAddress.Parse("10.0.8.61"), 5060);
             EventHandler<DialogState> stateHandler = (sender, state) => Console.WriteLine("state is {0}", state);
-
-            var dlg = new DialogInfo
-                          {
-                              From = @from,
-                              To = "555@10.0.8.61:5060;user=phone", OriginalCalledNumber = "11988609054@10.0.8.61:5060;user=phone",
-                              RemoteEndpoint = remoteHost,
-                              LocalEndpoint = new IPEndPoint(IPAddress.Parse("10.0.5.36"), 5060)
-                          };
 
             var dialog = Dialog.InitSipCall(dlg, stateHandler);
 
@@ -40,6 +44,8 @@
                 }
 
                 Digit d;
+
+                // ReSharper disable once SwitchStatementMissingSomeCases
                 switch (r.Key)
                 {
                     case ConsoleKey.D0:
@@ -98,6 +104,36 @@
                 Thread.Sleep(320);
             }
             while (true);
+        }
+
+        private static DialogInfo Configure(string sourceIp, string sourceNumber, string destinationNumber, string destinationIp, string originalCalledNumber)
+        {
+            var dlg = new DialogInfo
+            {
+                From = sourceNumber + "@" + sourceIp,
+                To = destinationNumber + "@" + destinationIp,
+                LocalEndpoint = new IPEndPoint(IPAddress.Parse(sourceIp), 5060),
+                RemoteEndpoint = new IPEndPoint(IPAddress.Parse(destinationIp), 5060)
+            };
+
+            if (!string.IsNullOrWhiteSpace(originalCalledNumber))
+            {
+                dlg.OriginalCalledNumber = new Contact(originalCalledNumber);
+            }
+
+            return dlg;
+        }
+
+        private static DialogInfo Configure()
+        {
+            var ask = new Func<string, string>(a =>
+                {
+                    Console.Write(a);
+                    var result = Console.ReadLine();
+                    return result;
+                });
+
+            return Configure(ask("Digite o seu ip:"), ask("Digite seu telefone:"), ask("Digite o telefone destino:"), ask("Digite o ip destino"), ask("digite o numero de b original ou vazio: "));
         }
     }
 }
