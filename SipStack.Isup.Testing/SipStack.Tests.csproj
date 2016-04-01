@@ -60,6 +60,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Alaw\TestConvertMuteData.cs" />
     <Compile Include="CalledNumberTests.cs" />
     <Compile Include="CallProgressTests.cs" />
     <Compile Include="ContactTests.cs" />
