@@ -12,7 +12,7 @@ namespace SipStack
 
         private static readonly IDictionary<AudioCodec, Func<IMediaCodec>> CodecFactory = new Dictionary<AudioCodec, Func<IMediaCodec>>();
 
-        private static int currentPort = InitialPort;
+        private static int currentPort;
 
         static MediaGateway()
         {
