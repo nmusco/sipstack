@@ -29,7 +29,20 @@ namespace SipStack
 
         public void SetRecordingDelegate(Action<RtpPayload> method)
         {
-            this.recordingDevice.SetSendDelegate(method);
+            this.recordingDevice.SetSendDelegate(a => this.TryConvert(a, method));
+        }
+
+        private void TryConvert(RtpPayload payload, Action<RtpPayload> next)
+        {
+            // TODO: get from configuration
+            if (payload.PayloadType != 8) 
+            {
+                next(payload);
+                return;
+            }
+
+            var data = payload.Data.AsPairs().Select(a => new[] { a[0], a[1] }).Select(a => AlawEncoder.LinearToAlaw(a.AsShort())).ToArray();
+            next(new RtpPayload(data, payload.SequenceNumber, payload.Identifier, payload.Timestamp, payload.IsFirst, payload.PayloadType));
         }
 
         public static class AlawEncoder
@@ -41,10 +54,6 @@ namespace SipStack
             /* Quantization field mask. */
 
             private const byte QuantMask = 0xf;
-
-            /* Number of A-law segments. */
-
-            private const byte Nsegs = 8;
 
             /* Left shift for segment number. */
 
@@ -79,7 +88,12 @@ namespace SipStack
                 return (short)((value & SignBit) > 0 ? t : -t);
             }
 
-            private static byte LinearToAlaw(int pcmVal)
+            public static byte LinearToAlaw(byte b1, byte b2)
+            {
+                return LinearToAlaw(new[] { b1, b2 }.AsShort());
+            }
+
+            public static byte LinearToAlaw(int pcmVal)
             {
                 int mask;
 

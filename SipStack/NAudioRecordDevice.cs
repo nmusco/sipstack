@@ -45,8 +45,14 @@ namespace SipStack
 
         private void DataAvailable(object sender, WaveInEventArgs e)
         {
+            if (this.method == null)
+            {
+                return;
+            }
+
             if (this.currentEvent == null)
             {
+                this.method.Invoke(new RtpPayload(e.Buffer, (short)Interlocked.Increment(ref this.sequenceNumber), 0xFA, this.watcher.ElapsedMilliseconds, false));
                 return;
             }
 
@@ -59,6 +65,11 @@ namespace SipStack
             {
                 this.currentEvent = null;
             }
+        }
+
+        public void Stop()
+        {
+            Instance.StopRecording();
         }
     }
 }
