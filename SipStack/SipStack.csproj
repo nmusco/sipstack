@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="AckMessage.cs" />
     <Compile Include="AlawMediaCodec.cs" />
+    <Compile Include="ByteArrayExtensions.cs" />
     <Compile Include="CollectionExtensions.cs" />
     <Compile Include="DialogInfo.cs" />
     <Compile Include="Isup\EventInformation.cs" />
