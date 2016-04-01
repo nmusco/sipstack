@@ -39,7 +39,13 @@ namespace SipStack.Media
 
         public void AddSample(RtpPayload rtpPacket)
         {
+            if (this.RemoteEndpoint == null)
+            {
+                return;
+            }
+
             var data = rtpPacket.ToArray();
+            
             this.receiveSocket.Send(data, data.Length, this.RemoteEndpoint);
         }
 
