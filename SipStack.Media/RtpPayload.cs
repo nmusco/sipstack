@@ -17,6 +17,14 @@ namespace SipStack.Media
 
         private readonly short sequenceNumber;
 
+        public byte PayloadType
+        {
+            get
+            {
+                return this.payloadType;
+            }
+        }
+
         public RtpPayload(byte[] data, short sequenceNumber, int identifier, long timestamp, bool isFirst, byte payloadType = 0x08)
         {
             this.data = data;
@@ -49,6 +57,38 @@ namespace SipStack.Media
             get
             {
                 return this.data;
+            }
+        }
+
+        public short SequenceNumber
+        {
+            get
+            {
+                return this.sequenceNumber;
+            }
+        }
+
+        public int Identifier
+        {
+            get
+            {
+                return this.identifier;
+            }
+        }
+
+        public long Timestamp
+        {
+            get
+            {
+                return this.timestamp;
+            }
+        }
+
+        public bool IsFirst
+        {
+            get
+            {
+                return this.isFirst;
             }
         }
 
