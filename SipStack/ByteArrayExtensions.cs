@@ -14,7 +14,7 @@ namespace SipStack
         {
             for (var startPos = 0; startPos < data.Length; startPos += 2)
             {
-                yield return new byte[] { data[startPos], data[startPos + 1] };
+                yield return new[] { data[startPos], data[startPos + 1] };
             }
         }
     }
