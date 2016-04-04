@@ -51,13 +51,31 @@ namespace SipStack.Media
 
         private void OnReceived(IAsyncResult ar)
         {
+            if (this.disposed)
+            {
+                return;
+            }
+
             var ep = this.RemoteEndpoint;
 
-            var buffer = this.receiveSocket.EndReceive(ar, ref ep);
-            if (!this.disposed)
+            byte[] buffer;
+
+            try
             {
-                this.receiveSocket.BeginReceive(this.OnReceived, null);
+                buffer = this.receiveSocket.EndReceive(ar, ref ep);
             }
+            catch (SocketException ex)
+            {
+                if (ex.SocketErrorCode == SocketError.ConnectionReset)
+                {
+                    return;
+                }
+
+                Console.WriteLine("number = {0}. Code = {1}", ex.ErrorCode, ex.SocketErrorCode);
+                throw;
+            }
+            
+            this.receiveSocket.BeginReceive(this.OnReceived, null);
 
             if (buffer != null && buffer.Length > 0)
             {
