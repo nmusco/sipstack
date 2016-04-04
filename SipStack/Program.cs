@@ -10,7 +10,19 @@
     {
         public static void Main(string[] args)
         {
-            var recordingDevice = new NAudioRecordDevice();
+            var sessionName = (System.Environment.GetEnvironmentVariable("SESSIONNAME") ?? string.Empty).ToLower();
+            var isRdp = sessionName.StartsWith("rdp") || sessionName.StartsWith("console");
+            Console.WriteLine("IsRdp? {0}. {1}", isRdp, System.Environment.GetEnvironmentVariable("SESSIONNAME"));
+            IRecordingDevice recordingDevice;
+            if (isRdp)
+            {
+                recordingDevice = new DummyRecordDevice();
+                Console.WriteLine("You're connected through rdp and will not be able to record audio");
+            }
+            else
+            {
+                recordingDevice = new NAudioRecordDevice();
+            }
 
             MediaGateway.RegisterCodec(MediaGateway.AudioCodec.G711Alaw, () => new AlawMediaCodec(NAudioPlaybackDevice.Instance, recordingDevice));
             DialogInfo dlg;

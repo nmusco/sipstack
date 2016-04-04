@@ -53,6 +53,7 @@
     <Compile Include="ByteArrayExtensions.cs" />
     <Compile Include="CollectionExtensions.cs" />
     <Compile Include="DialogInfo.cs" />
+    <Compile Include="DummyRecordDevice.cs" />
     <Compile Include="Isup\EventInformation.cs" />
     <Compile Include="Isup\IsupCallProgress.cs" />
     <Compile Include="Isup\IsupInitialAddressExtensions.cs" />
