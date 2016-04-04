@@ -40,7 +40,14 @@
                 return;
             }
 
-            EventHandler<DialogState> stateHandler = (sender, state) => Console.WriteLine("state is {0}", state);
+            EventHandler<DialogState> stateHandler = (sender, state) =>
+                {
+                    Console.WriteLine("state is {0}", state);
+                    if (state == DialogState.Hungup)
+                    {
+                        recordingDevice.Stop();
+                    }
+                };
 
             var dialog = Dialog.InitSipCall(dlg, stateHandler);
 

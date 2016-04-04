@@ -279,7 +279,8 @@ namespace SipStack
                 this.stateChanged(this, DialogState.Hungup);
 
                 // TODO: check this response is a 200 OK
-                this.TryGetNextMessage(this.byeRequest.Token, out response);
+                //this.TryGetNextMessage(this.byeRequest.Token, out response);
+                this.byeRequest.Cancel();
             }
             else
             {
@@ -307,6 +308,8 @@ namespace SipStack
 
                 this.Send(msg);
                 this.stateChanged(this, DialogState.Hungup);
+
+                this.byeRequest.Cancel();
             }
         }
 
